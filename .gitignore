@@ -1,6 +1,6 @@
 # Dependencies
 node_modules/
-package-lock.json
+cot-frontend/node_modules/
 
 # Environment
 .env

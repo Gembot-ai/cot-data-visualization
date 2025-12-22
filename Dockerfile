@@ -4,14 +4,13 @@
 # Stage 1: Build Backend
 FROM node:20-alpine AS backend-builder
 
-WORKDIR /app/backend
+WORKDIR /app
 
-COPY cot-backend/package*.json ./
+COPY package*.json ./
+COPY tsconfig.json ./
 RUN npm install
 
-COPY cot-backend/tsconfig.json ./
-COPY cot-backend/src ./src
-
+COPY src ./src
 RUN npm run build
 
 # Stage 2: Build Frontend
@@ -23,7 +22,6 @@ COPY cot-frontend/package*.json ./
 RUN npm install
 
 COPY cot-frontend/ ./
-
 RUN npm run build
 
 # Stage 3: Production Runtime
@@ -35,13 +33,13 @@ WORKDIR /app
 RUN apk add --no-cache dumb-init
 
 # Copy backend
-COPY --from=backend-builder /app/backend/dist ./cot-backend/dist
-COPY --from=backend-builder /app/backend/node_modules ./cot-backend/node_modules
-COPY --from=backend-builder /app/backend/package*.json ./cot-backend/
+COPY --from=backend-builder /app/dist ./dist
+COPY --from=backend-builder /app/node_modules ./node_modules
+COPY --from=backend-builder /app/package*.json ./
 
 # Copy backend source (needed for tsx to run railway-init.ts)
-COPY cot-backend/src ./cot-backend/src
-COPY cot-backend/tsconfig.json ./cot-backend/
+COPY src ./src
+COPY tsconfig.json ./
 
 # Copy frontend build
 COPY --from=frontend-builder /app/frontend/dist ./cot-frontend/dist
@@ -52,8 +50,6 @@ RUN addgroup -g 1001 -S nodejs && \
     chown -R nodejs:nodejs /app
 
 USER nodejs
-
-WORKDIR /app/cot-backend
 
 # Set production environment
 ENV NODE_ENV=production
