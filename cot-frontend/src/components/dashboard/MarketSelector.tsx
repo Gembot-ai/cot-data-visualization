@@ -76,10 +76,10 @@ export const MarketSelector: React.FC<MarketSelectorProps> = ({
   }
 
   return (
-    <div className="relative" ref={dropdownRef} style={{ zIndex: 100 }}>
+    <div className="relative z-50" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="glass-strong w-full sm:w-auto px-6 py-3 rounded-xl shadow-glass dark:shadow-glass-dark hover:scale-105 transition-transform duration-200 flex items-center justify-between gap-4 min-w-[280px] relative z-50"
+        className="glass-strong w-full sm:w-auto px-6 py-3 rounded-xl shadow-glass dark:shadow-glass-dark hover:scale-105 transition-transform duration-200 flex items-center justify-between gap-4 min-w-[280px]"
       >
         <div className="flex items-center gap-3">
           <span className="text-2xl font-bold text-gray-900 dark:text-white">
