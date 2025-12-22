@@ -115,9 +115,7 @@ async function railwayInit() {
       logger.info('📥 No CoT data found. Starting automatic data fetch from CFTC API...');
       logger.info('⏱️  This will take approximately 10-15 minutes. Please be patient.');
 
-      // Close pool before spawning child process
-      await pool.end();
-
+      // Don't close pool - fetchAllCotData needs it
       // Import and run the fetch script
       const { fetchAllCotData } = await import('./fetch-all-cot-data');
       await fetchAllCotData();
@@ -131,6 +129,8 @@ async function railwayInit() {
   } catch (error) {
     logger.error({ error }, '❌ Railway initialization failed');
     throw error;
+  } finally {
+    await pool.end();
   }
 }
 
