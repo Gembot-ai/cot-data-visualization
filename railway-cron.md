@@ -13,7 +13,7 @@ To automatically update CoT data every week, you need to create a Cron Job in Ra
 
 3. **Configure the Cron Job**
    - **Name:** `Weekly CoT Data Update`
-   - **Schedule:** `0 20 * * 5` (Every Friday at 8 PM UTC)
+   - **Schedule:** `0 22 * * 5` (Every Friday at 10 PM UTC = Saturday 11 AM NZDT)
    - **Command:** `npm run weekly-update`
    - **Service:** Select your main service (the one with the database connection)
 
@@ -29,19 +29,23 @@ To automatically update CoT data every week, you need to create a Cron Job in Ra
 
 ## Schedule Explanation
 
-`0 20 * * 5` means:
+`0 22 * * 5` means:
 - `0` - At minute 0
-- `20` - At hour 20 (8 PM UTC)
+- `22` - At hour 22 (10 PM UTC)
 - `*` - Every day of month
 - `*` - Every month
 - `5` - On Friday (0=Sunday, 5=Friday)
 
-**Note:** CFTC releases CoT reports every Friday around 3:30 PM ET (8:30 PM UTC), so running at 8 PM UTC should capture the latest data.
+**Timing Breakdown:**
+- CFTC releases CoT reports: **Friday 3:30 PM ET** (8:30 PM UTC)
+- In New Zealand (NZDT UTC+13): **Saturday 9:30 AM**
+- Cron runs: **Friday 10 PM UTC** = **Saturday 11:00 AM NZDT**
+- Buffer: 1.5 hours after release to ensure data is fully available
 
 ## Alternative Schedules
 
-- **Every Friday at 9 PM UTC:** `0 21 * * 5`
-- **Every Friday at 10 PM UTC:** `0 22 * * 5`
+- **Earlier (Saturday 10 AM NZDT):** `0 21 * * 5`
+- **Later (Saturday 12 PM NZDT):** `0 23 * * 5`
 - **Daily at midnight UTC:** `0 0 * * *`
 
 ## Testing the Cron

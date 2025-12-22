@@ -6,10 +6,13 @@ import { fetchAllCotData } from './fetch-all-cot-data';
  * Weekly update script for Railway Cron
  * Fetches the latest CoT data from CFTC API
  *
+ * CFTC releases CoT reports every Friday at 3:30 PM ET (8:30 PM UTC)
+ * In New Zealand time (NZDT UTC+13): Saturday 9:30 AM
+ *
  * Railway Cron Setup:
  * 1. In Railway dashboard, go to your service
  * 2. Click "New" → "Cron Job"
- * 3. Schedule: 0 20 * * FRI (Every Friday at 8 PM UTC)
+ * 3. Schedule: 0 22 * * 5 (Every Friday at 10 PM UTC = Saturday 11 AM NZDT)
  * 4. Command: npm run weekly-update
  */
 
