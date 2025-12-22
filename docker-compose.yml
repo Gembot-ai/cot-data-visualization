@@ -29,7 +29,7 @@ services:
 
   api:
     build:
-      context: ./cot-backend
+      context: .
       dockerfile: Dockerfile
     environment:
       NODE_ENV: development
@@ -46,7 +46,7 @@ services:
       redis:
         condition: service_healthy
     volumes:
-      - ./cot-backend/src:/app/src
+      - ./src:/app/src
     command: npm run dev
 
   frontend:
