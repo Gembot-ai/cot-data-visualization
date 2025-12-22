@@ -51,8 +51,8 @@ export class CotController {
           new Date(endDate)
         );
       } else {
-        // Default to 52 weeks
-        reports = await this.reportsRepo.findHistoricalByMarket(market.id, 52);
+        // No date params = get all historical data
+        reports = await this.reportsRepo.findHistoricalByMarket(market.id);
       }
 
       return {

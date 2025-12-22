@@ -34,15 +34,19 @@ export class CotReportsRepository {
 
   async findHistoricalByMarket(
     marketId: number,
-    weeks: number = 52
+    weeks?: number
   ): Promise<CotReport[]> {
-    const result = await pool.query<CotReport>(
-      `SELECT * FROM cot_reports
-       WHERE market_id = $1
-       ORDER BY report_date DESC
-       LIMIT $2`,
-      [marketId, weeks]
-    );
+    const query = weeks
+      ? `SELECT * FROM cot_reports
+         WHERE market_id = $1
+         ORDER BY report_date DESC
+         LIMIT $2`
+      : `SELECT * FROM cot_reports
+         WHERE market_id = $1
+         ORDER BY report_date DESC`;
+
+    const params = weeks ? [marketId, weeks] : [marketId];
+    const result = await pool.query<CotReport>(query, params);
     return result.rows;
   }
 
