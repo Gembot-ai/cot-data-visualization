@@ -48,7 +48,7 @@ export async function buildApp() {
 
   // Serve static frontend files in production
   if (env.NODE_ENV === 'production') {
-    const frontendPath = path.join(__dirname, '../../cot-frontend/dist');
+    const frontendPath = path.join(__dirname, '../cot-frontend/dist');
     logger.info({ path: frontendPath }, 'Serving frontend from path');
 
     await fastify.register(fastifyStatic, {
