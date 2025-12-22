@@ -36,25 +36,6 @@ export async function buildApp() {
   await fastify.register(cotRoutes, { prefix: '/api/v1' });
   await fastify.register(marketsRoutes, { prefix: '/api/v1' });
 
-  // Serve static frontend files in production
-  if (env.NODE_ENV === 'production') {
-    const frontendPath = path.join(__dirname, '../../cot-frontend/dist');
-
-    await fastify.register(fastifyStatic, {
-      root: frontendPath,
-      prefix: '/'
-    });
-
-    // SPA fallback - serve index.html for non-API routes
-    fastify.setNotFoundHandler((request, reply) => {
-      if (request.url.startsWith('/api/')) {
-        reply.code(404).send({ error: 'Not found' });
-      } else {
-        reply.sendFile('index.html');
-      }
-    });
-  }
-
   // Error handling
   fastify.setErrorHandler(errorHandler);
 
@@ -65,18 +46,40 @@ export async function buildApp() {
     uptime: process.uptime()
   }));
 
-  // Root route
-  fastify.get('/', async () => ({
-    name: 'CoT Data Aggregation API',
-    version: '1.0.0',
-    endpoints: {
-      health: '/health',
-      markets: '/api/v1/markets',
-      cot: '/api/v1/cot/:marketSymbol',
-      cotHistory: '/api/v1/cot/:marketSymbol/history',
-      cotBatch: '/api/v1/cot/batch?markets=GC,CL,ES'
-    }
-  }));
+  // Serve static frontend files in production
+  if (env.NODE_ENV === 'production') {
+    const frontendPath = path.join(__dirname, '../../cot-frontend/dist');
+    logger.info({ path: frontendPath }, 'Serving frontend from path');
+
+    await fastify.register(fastifyStatic, {
+      root: frontendPath,
+      prefix: '/'
+    });
+
+    // SPA fallback - serve index.html for all non-API routes
+    fastify.setNotFoundHandler((request, reply) => {
+      if (request.url.startsWith('/api/')) {
+        reply.code(404).send({ error: 'Not found' });
+      } else {
+        reply.sendFile('index.html');
+      }
+    });
+
+    logger.info('✅ Frontend static files registered');
+  } else {
+    // API info route (only in development)
+    fastify.get('/', async () => ({
+      name: 'CoT Data Aggregation API',
+      version: '1.0.0',
+      endpoints: {
+        health: '/health',
+        markets: '/api/v1/markets',
+        cot: '/api/v1/cot/:marketSymbol',
+        cotHistory: '/api/v1/cot/:marketSymbol/history',
+        cotBatch: '/api/v1/cot/batch?markets=GC,CL,ES'
+      }
+    }));
+  }
 
   return fastify;
 }
