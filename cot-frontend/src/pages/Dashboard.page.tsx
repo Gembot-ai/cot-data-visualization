@@ -12,25 +12,14 @@ export const DashboardPage: React.FC = () => {
   const selectedMarket = selectedMarkets[0] || 'GC';
   const latestQuery = useCotData(selectedMarket);
 
-  // Initial load: Fetch 1 year of data for fast initial render
-  const endDate = new Date();
-  const startDate = new Date();
-  startDate.setFullYear(startDate.getFullYear() - 1);
-  const historyQuery = useCotHistory(selectedMarket, startDate, endDate);
+  // Fetch all historical data (no date params = get everything from DB)
+  const historyQuery = useCotHistory(selectedMarket);
 
-  // Background fetch: Load 5 years of data silently after initial render
-  const bgStartDate = new Date();
-  bgStartDate.setFullYear(bgStartDate.getFullYear() - 5);
-  const backgroundQuery = useCotHistory(selectedMarket, bgStartDate, endDate);
-
-  // Combine data: use background data if available, otherwise use initial data
   React.useEffect(() => {
-    if (backgroundQuery.data?.reports) {
-      setAllData(backgroundQuery.data.reports);
-    } else if (historyQuery.data?.reports) {
+    if (historyQuery.data?.reports) {
       setAllData(historyQuery.data.reports);
     }
-  }, [historyQuery.data, backgroundQuery.data]);
+  }, [historyQuery.data]);
 
   // Debug logging
   console.log('Query states:', {
