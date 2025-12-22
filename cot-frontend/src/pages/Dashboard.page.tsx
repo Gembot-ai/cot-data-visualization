@@ -7,32 +7,11 @@ import { MarketSelector } from '../components/dashboard/MarketSelector';
 export const DashboardPage: React.FC = () => {
   const [selectedMarkets, setSelectedMarkets] = useState<string[]>(['GC']);
   const [darkMode] = useState(false);
-  const [allData, setAllData] = useState<any[]>([]);
 
   const selectedMarket = selectedMarkets[0] || 'GC';
   const latestQuery = useCotData(selectedMarket);
-
-  // Fetch all historical data (no date params = get everything from DB)
   const historyQuery = useCotHistory(selectedMarket);
 
-  React.useEffect(() => {
-    if (historyQuery.data?.reports) {
-      setAllData(historyQuery.data.reports);
-    }
-  }, [historyQuery.data]);
-
-  // Debug logging
-  console.log('Query states:', {
-    latestLoading: latestQuery.isLoading,
-    latestError: latestQuery.isError,
-    latestData: !!latestQuery.data,
-    historyLoading: historyQuery.isLoading,
-    historyError: historyQuery.isError,
-    historyData: !!historyQuery.data,
-    historyReports: historyQuery.data?.reports?.length
-  });
-
-  // Only block on initial queries, not background fetch
   if (latestQuery.isLoading || historyQuery.isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -86,13 +65,23 @@ export const DashboardPage: React.FC = () => {
 
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           <div className="xl:col-span-2">
-            {allData.length > 0 && (
-              <StackedBarChart data={[...allData, ...(latestQuery.data && !allData.some(r => r.report_date === latestQuery.data.report.report_date) ? [latestQuery.data.report] : [])]} darkMode={darkMode} />
+            {historyQuery.data && (
+              <StackedBarChart
+                data={historyQuery.data.reports}
+                darkMode={darkMode}
+              />
             )}
           </div>
           <div className="xl:col-span-1">
-            {latestQuery.data && allData.length > 0 && (
-              <MetricsPanel data={latestQuery.data.report} previousData={allData.find((r: any) => r.source === 'CFTC_API' && new Date(r.report_date) < new Date(latestQuery.data.report.report_date))} darkMode={darkMode} />
+            {latestQuery.data && historyQuery.data && (
+              <MetricsPanel
+                data={latestQuery.data.report}
+                previousData={historyQuery.data.reports.find((r: any) =>
+                  r.source === 'CFTC_API' &&
+                  new Date(r.report_date) < new Date(latestQuery.data.report.report_date)
+                )}
+                darkMode={darkMode}
+              />
             )}
           </div>
         </div>

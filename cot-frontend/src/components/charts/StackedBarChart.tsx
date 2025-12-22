@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -46,6 +46,7 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
   const [customEndDate, setCustomEndDate] = useState('');
   const [showCustomDatePicker, setShowCustomDatePicker] = useState(false);
   const chartContainerRef = useRef<HTMLDivElement>(null);
+  const [chartKey, setChartKey] = useState(0);
 
   const colors = {
     smallSpeculators: '#fbbf24',
@@ -73,37 +74,41 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
-  // Prefer CFTC_API data, but include all data if no CFTC data exists
-  const hasCFTCData = data.some((d: any) => d.source === 'CFTC_API');
-  let filteredData = hasCFTCData
-    ? data.filter((d: any) => d.source === 'CFTC_API' || !d.source)
-    : data; // If no CFTC data, show all (including sample)
+  // Force chart re-render when date range changes
+  useEffect(() => {
+    setChartKey(prev => prev + 1);
+  }, [dateRange, customStartDate, customEndDate]);
 
-  // Deduplicate by date - keep the entry with highest open interest (main futures contract)
-  const dateMap = new Map();
-  filteredData.forEach((d: any) => {
-    const dateKey = new Date(d.report_date).toISOString().split('T')[0];
-    const existing = dateMap.get(dateKey);
-    if (!existing || d.open_interest > existing.open_interest) {
-      dateMap.set(dateKey, d);
-    }
-  });
-  filteredData = Array.from(dateMap.values());
+  // Memoize filtered data to avoid recalculation on every render
+  const filteredData = useMemo(() => {
+    // Prefer CFTC_API data, but include all data if no CFTC data exists
+    const hasCFTCData = data.some((d: any) => d.source === 'CFTC_API');
+    let processed = hasCFTCData
+      ? data.filter((d: any) => d.source === 'CFTC_API' || !d.source)
+      : data;
 
-  // Apply date range filter
-  const getFilteredByDateRange = (data: any[]) => {
+    // Deduplicate by date - keep entry with highest open interest
+    const dateMap = new Map();
+    processed.forEach((d: any) => {
+      const dateKey = new Date(d.report_date).toISOString().split('T')[0];
+      const existing = dateMap.get(dateKey);
+      if (!existing || d.open_interest > existing.open_interest) {
+        dateMap.set(dateKey, d);
+      }
+    });
+    processed = Array.from(dateMap.values());
+
+    // Apply date range filter
     if (dateRange === 'CUSTOM' && customStartDate && customEndDate) {
       const start = new Date(customStartDate);
       const end = new Date(customEndDate);
-      return data.filter(d => {
+      return processed.filter(d => {
         const reportDate = new Date(d.report_date);
         return reportDate >= start && reportDate <= end;
       });
     }
 
-    if (dateRange === 'ALL') {
-      return data;
-    }
+    if (dateRange === 'ALL') return processed;
 
     const now = new Date();
     let cutoffDate: Date;
@@ -128,36 +133,37 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
         cutoffDate = new Date(now.getFullYear() - 5, now.getMonth(), now.getDate());
         break;
       default:
-        return data;
+        return processed;
     }
 
-    return data.filter(d => new Date(d.report_date) >= cutoffDate);
-  };
+    return processed.filter(d => new Date(d.report_date) >= cutoffDate);
+  }, [data, dateRange, customStartDate, customEndDate]);
 
-  filteredData = getFilteredByDateRange(filteredData);
+  const chartData = useMemo(() =>
+    filteredData
+      .slice()
+      .reverse()
+      .map((d) => {
+        const commercialNet = d.commercial_long - d.commercial_short;
+        const largeSpecNet = d.non_commercial_long - d.non_commercial_short;
+        const smallSpecNet = (d.non_reportable_long || 0) - (d.non_reportable_short || 0);
 
-  const chartData = filteredData
-    .slice()
-    .reverse()
-    .map((d) => {
-      const commercialNet = d.commercial_long - d.commercial_short;
-      const largeSpecNet = d.non_commercial_long - d.non_commercial_short;
-      const smallSpecNet = (d.non_reportable_long || 0) - (d.non_reportable_short || 0);
+        return {
+          date: new Date(d.report_date).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: '2-digit',
+          }),
+          smallSpecNet,
+          largeSpecNet,
+          commercialNet,
+          openInterest: d.open_interest,
+        };
+      }),
+    [filteredData]
+  );
 
-      return {
-        date: new Date(d.report_date).toLocaleDateString('en-US', {
-          month: 'short',
-          day: 'numeric',
-          year: '2-digit',
-        }),
-        smallSpecNet,
-        largeSpecNet,
-        commercialNet,
-        openInterest: d.open_interest,
-      };
-    });
-
-  const labels = chartData.map(d => d.date);
+  const labels = useMemo(() => chartData.map(d => d.date), [chartData]);
 
   const chartJsData = {
     labels,
@@ -432,7 +438,7 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
       )}
 
       <div className={isFullscreen ? 'h-[calc(100vh-120px)]' : 'h-[600px]'}>
-        <Chart type="bar" data={chartJsData as any} options={options} />
+        <Chart key={chartKey} type="bar" data={chartJsData as any} options={options} />
       </div>
     </div>
   );
