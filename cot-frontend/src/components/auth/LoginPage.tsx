@@ -18,17 +18,18 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
-      <div className="glass-strong p-8 rounded-3xl shadow-2xl w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
+      <div className="glass-strong p-10 rounded-2xl shadow-glass w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="text-5xl mb-4">🔒</div>
-          <h1 className="text-3xl font-bold text-white mb-2">Trading Desk Agents</h1>
-          <p className="text-gray-400 text-sm">Enter password to access dashboard</p>
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent mb-3">
+            Eccuity CoT Dashboard
+          </h1>
+          <p className="text-gray-600 text-sm font-medium">Commitment of Traders Analysis</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-2">
+            <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-2">
               Password
             </label>
             <input
@@ -40,24 +41,24 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                 setError('');
               }}
               placeholder="Enter dashboard password"
-              className="w-full px-4 py-3 rounded-xl border-2 border-gray-700 bg-gray-800/50 text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+              className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 bg-white text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all shadow-sm"
               autoFocus
             />
             {error && (
-              <p className="text-red-400 text-sm mt-2">{error}</p>
+              <p className="text-red-500 text-sm mt-2 font-medium">{error}</p>
             )}
           </div>
 
           <button
             type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl transition-all duration-200 hover:scale-105 shadow-lg"
+            className="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-3 px-6 rounded-xl transition-all duration-200 hover:scale-[1.02] shadow-lg hover:shadow-xl"
           >
-            Login
+            Access Dashboard
           </button>
         </form>
 
-        <p className="text-center text-gray-500 text-xs mt-6">
-          CoT Data Visualization Platform
+        <p className="text-center text-gray-500 text-xs mt-8">
+          CFTC Weekly Reports • Trading Analysis
         </p>
       </div>
     </div>
