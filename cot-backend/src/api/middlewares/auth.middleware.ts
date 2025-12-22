@@ -2,8 +2,11 @@ import { FastifyRequest, FastifyReply } from 'fastify';
 import { env } from '../../config/env';
 
 /**
- * Simple password authentication middleware
- * Protects the entire app with a single password via HTTP Basic Auth
+ * Simple password-only authentication middleware
+ * Protects the entire app with a single password
+ * Accepts password in two ways:
+ * 1. Query param: ?password=YOUR_PASSWORD
+ * 2. HTTP Basic Auth (username can be anything, only password checked)
  */
 export async function authMiddleware(
   request: FastifyRequest,
@@ -19,34 +22,33 @@ export async function authMiddleware(
     return;
   }
 
+  // Check query parameter first (easiest for browser access)
+  const queryParams = request.query as any;
+  if (queryParams?.password === env.APP_PASSWORD) {
+    return; // Authentication successful
+  }
+
+  // Check HTTP Basic Auth (for API clients)
   const authHeader = request.headers.authorization;
+  if (authHeader) {
+    const base64Credentials = authHeader.split(' ')[1];
+    if (base64Credentials) {
+      const credentials = Buffer.from(base64Credentials, 'base64').toString('utf-8');
+      const parts = credentials.split(':');
+      const password = parts.length > 1 ? parts[1] : parts[0]; // Accept either "password" or "user:password"
 
-  if (!authHeader) {
-    return reply
-      .code(401)
-      .header('WWW-Authenticate', 'Basic realm="CoT Data App"')
-      .send({ error: 'Authentication required' });
+      if (password === env.APP_PASSWORD) {
+        return; // Authentication successful
+      }
+    }
   }
 
-  // Parse Basic Auth header
-  const base64Credentials = authHeader.split(' ')[1];
-  if (!base64Credentials) {
-    return reply
-      .code(401)
-      .header('WWW-Authenticate', 'Basic realm="CoT Data App"')
-      .send({ error: 'Invalid authorization header' });
-  }
-
-  const credentials = Buffer.from(base64Credentials, 'base64').toString('utf-8');
-  const [username, password] = credentials.split(':');
-
-  // Check password (username can be anything)
-  if (password !== env.APP_PASSWORD) {
-    return reply
-      .code(401)
-      .header('WWW-Authenticate', 'Basic realm="CoT Data App"')
-      .send({ error: 'Invalid password' });
-  }
-
-  // Authentication successful
+  // Authentication failed
+  return reply
+    .code(401)
+    .header('WWW-Authenticate', 'Basic realm="CoT Data App"')
+    .send({
+      error: 'Authentication required',
+      hint: 'Add ?password=YOUR_PASSWORD to the URL or use HTTP Basic Auth'
+    });
 }
