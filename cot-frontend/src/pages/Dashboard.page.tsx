@@ -65,7 +65,7 @@ export const DashboardPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="glass-strong mb-8 p-6 rounded-2xl shadow-glass">
+        <div className="glass-strong mb-8 p-6 rounded-2xl shadow-glass overflow-visible">
           <div className="flex flex-col lg:flex-row gap-6 items-start lg:items-center">
             <MarketSelector selectedMarkets={selectedMarkets} onChange={setSelectedMarkets} darkMode={darkMode} multiSelect={false} />
             <div className="flex-1 flex flex-wrap gap-3 items-center justify-end">

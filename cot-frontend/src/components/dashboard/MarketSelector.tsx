@@ -107,7 +107,13 @@ export const MarketSelector: React.FC<MarketSelectorProps> = ({
       </button>
 
       {isOpen && (
-        <div className="absolute left-0 z-[9999] mt-2 w-full sm:w-[500px] glass-strong rounded-xl shadow-2xl p-4 max-h-[500px] overflow-hidden flex flex-col">
+        <div
+          className="absolute left-0 mt-2 w-full sm:w-[500px] glass-strong rounded-xl shadow-2xl p-4 max-h-[500px] overflow-hidden flex flex-col"
+          style={{
+            zIndex: 9999,
+            position: 'absolute'
+          }}
+        >
           {/* Search */}
           <div className="mb-4">
             <input
