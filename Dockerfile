@@ -55,6 +55,9 @@ USER nodejs
 
 WORKDIR /app/cot-backend
 
+# Set production environment
+ENV NODE_ENV=production
+
 EXPOSE 3001
 
 # Use dumb-init to handle signals properly
