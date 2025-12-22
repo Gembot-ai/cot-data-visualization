@@ -11,11 +11,22 @@ export const DashboardPage: React.FC = () => {
   const selectedMarket = selectedMarkets[0] || 'GC';
   const latestQuery = useCotData(selectedMarket);
 
-  // Fetch 5 years of data by default (chart will filter to smaller ranges)
+  // Fetch 2 years of data by default (chart will filter to smaller ranges)
   const endDate = new Date();
   const startDate = new Date();
-  startDate.setFullYear(startDate.getFullYear() - 5);
+  startDate.setFullYear(startDate.getFullYear() - 2);
   const historyQuery = useCotHistory(selectedMarket, startDate, endDate);
+
+  // Debug logging
+  console.log('Query states:', {
+    latestLoading: latestQuery.isLoading,
+    latestError: latestQuery.isError,
+    latestData: !!latestQuery.data,
+    historyLoading: historyQuery.isLoading,
+    historyError: historyQuery.isError,
+    historyData: !!historyQuery.data,
+    historyReports: historyQuery.data?.reports?.length
+  });
 
   if (latestQuery.isLoading || historyQuery.isLoading) {
     return (
@@ -25,6 +36,10 @@ export const DashboardPage: React.FC = () => {
             <div className="w-16 h-16 border-4 border-gray-200 border-t-brand-500 rounded-full animate-spin"></div>
           </div>
           <div className="text-2xl font-bold mb-2">Loading CoT Data...</div>
+          <div className="text-sm text-gray-500">
+            Latest: {latestQuery.isLoading ? 'loading...' : 'done'} |
+            History: {historyQuery.isLoading ? 'loading...' : 'done'}
+          </div>
         </div>
       </div>
     );
