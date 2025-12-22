@@ -1,0 +1,285 @@
+import React from 'react';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  LineElement,
+  PointElement,
+  Title,
+  Tooltip,
+  Legend,
+  ChartOptions,
+} from 'chart.js';
+import { Chart } from 'react-chartjs-2';
+import type { CotData } from '../../api/types';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  LineElement,
+  PointElement,
+  Title,
+  Tooltip,
+  Legend
+);
+
+interface StackedBarChartProps {
+  data: CotData[];
+  darkMode?: boolean;
+}
+
+export const StackedBarChart: React.FC<StackedBarChartProps> = ({
+  data,
+  darkMode = false,
+}) => {
+  const colors = {
+    smallSpeculators: '#fbbf24',
+    largeSpeculators: '#3b82f6',
+    commercials: '#ef4444',
+    openInterest: '#10b981',
+  };
+
+  // Prefer CFTC_API data, but include all data if no CFTC data exists
+  const hasCFTCData = data.some((d: any) => d.source === 'CFTC_API');
+  let filteredData = hasCFTCData
+    ? data.filter((d: any) => d.source === 'CFTC_API' || !d.source)
+    : data; // If no CFTC data, show all (including sample)
+
+  // Deduplicate by date - keep the entry with highest open interest (main futures contract)
+  const dateMap = new Map();
+  filteredData.forEach((d: any) => {
+    const dateKey = new Date(d.report_date).toISOString().split('T')[0];
+    const existing = dateMap.get(dateKey);
+    if (!existing || d.open_interest > existing.open_interest) {
+      dateMap.set(dateKey, d);
+    }
+  });
+  filteredData = Array.from(dateMap.values());
+
+  const chartData = filteredData
+    .slice()
+    .reverse()
+    .map((d) => {
+      const commercialNet = d.commercial_long - d.commercial_short;
+      const largeSpecNet = d.non_commercial_long - d.non_commercial_short;
+      const smallSpecNet = (d.non_reportable_long || 0) - (d.non_reportable_short || 0);
+
+      return {
+        date: new Date(d.report_date).toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: '2-digit',
+        }),
+        smallSpecNet,
+        largeSpecNet,
+        commercialNet,
+        openInterest: d.open_interest,
+      };
+    });
+
+  const labels = chartData.map(d => d.date);
+
+  const chartJsData = {
+    labels,
+    datasets: [
+      {
+        type: 'bar' as const,
+        label: 'Small Speculators',
+        data: chartData.map(d => d.smallSpecNet),
+        backgroundColor: colors.smallSpeculators,
+        borderWidth: 0,
+        yAxisID: 'y',
+        order: 2,
+      },
+      {
+        type: 'bar' as const,
+        label: 'Large Speculators',
+        data: chartData.map(d => d.largeSpecNet),
+        backgroundColor: colors.largeSpeculators,
+        borderWidth: 0,
+        yAxisID: 'y',
+        order: 2,
+      },
+      {
+        type: 'bar' as const,
+        label: 'Commercials',
+        data: chartData.map(d => d.commercialNet),
+        backgroundColor: colors.commercials,
+        borderWidth: 0,
+        yAxisID: 'y',
+        order: 2,
+      },
+      {
+        type: 'line' as const,
+        label: 'Open Interest',
+        data: chartData.map(d => d.openInterest),
+        borderColor: 'rgba(16, 185, 129, 0.7)', // 70% opacity green
+        backgroundColor: 'transparent',
+        borderWidth: 2.5,
+        yAxisID: 'y1',
+        pointRadius: 0,
+        pointHoverRadius: 0,
+        fill: false,
+        tension: 0.4,
+        order: 1,
+      },
+    ],
+  };
+
+  const options: ChartOptions<'bar'> = {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: {
+      mode: 'index',
+      intersect: false,
+    },
+    plugins: {
+      legend: {
+        display: false,
+      },
+      tooltip: {
+        backgroundColor: darkMode ? 'rgba(17, 24, 39, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+        titleColor: darkMode ? '#fff' : '#000',
+        bodyColor: darkMode ? '#fff' : '#000',
+        borderColor: darkMode ? '#374151' : '#e5e7eb',
+        borderWidth: 2,
+        padding: 12,
+        displayColors: true,
+        callbacks: {
+          label: function(context: any) {
+            let label = context.dataset.label || '';
+            if (label) {
+              label += ': ';
+            }
+            if (context.parsed.y !== null) {
+              label += context.parsed.y.toLocaleString();
+            }
+            return label;
+          }
+        }
+      },
+    },
+    scales: {
+      x: {
+        grid: {
+          display: true,
+          color: darkMode ? 'rgba(55, 65, 81, 0.5)' : 'rgba(229, 231, 235, 0.5)',
+        },
+        ticks: {
+          color: darkMode ? '#9ca3af' : '#6b7280',
+          font: {
+            size: 10,
+            weight: 500,
+          },
+          maxRotation: 45,
+          minRotation: 45,
+        },
+      },
+      y: {
+        type: 'linear',
+        position: 'left',
+        title: {
+          display: true,
+          text: 'Net Contracts',
+          color: darkMode ? '#9ca3af' : '#6b7280',
+          font: {
+            size: 12,
+            weight: 600,
+          },
+        },
+        grid: {
+          color: darkMode ? 'rgba(55, 65, 81, 0.5)' : 'rgba(229, 231, 235, 0.5)',
+        },
+        ticks: {
+          color: darkMode ? '#9ca3af' : '#6b7280',
+          font: {
+            weight: 500,
+          },
+          callback: function(value: any) {
+            return (value / 1000).toFixed(0) + 'K';
+          }
+        },
+      },
+      y1: {
+        type: 'linear',
+        position: 'right',
+        title: {
+          display: true,
+          text: 'Open Interest',
+          color: colors.openInterest,
+          font: {
+            size: 12,
+            weight: 600,
+          },
+        },
+        grid: {
+          drawOnChartArea: false,
+        },
+        ticks: {
+          color: colors.openInterest,
+          font: {
+            weight: 500,
+          },
+          callback: function(value: any) {
+            return (value / 1000).toFixed(0) + 'K';
+          }
+        },
+        // Force open interest to use upper half of chart
+        min: function(context: any) {
+          const data = context.chart.data.datasets.find((d: any) => d.yAxisID === 'y1')?.data || [];
+          const values = data.filter((v: any) => v !== null && v !== undefined) as number[];
+          if (values.length === 0) return 0;
+          const minVal = Math.min(...values);
+          const maxVal = Math.max(...values);
+          const range = maxVal - minVal;
+          // Start scale at min - (range * 2) to push line to top half
+          return minVal - (range * 2);
+        },
+        max: function(context: any) {
+          const data = context.chart.data.datasets.find((d: any) => d.yAxisID === 'y1')?.data || [];
+          const values = data.filter((v: any) => v !== null && v !== undefined) as number[];
+          if (values.length === 0) return 100;
+          const maxVal = Math.max(...values);
+          const minVal = Math.min(...values);
+          const range = maxVal - minVal;
+          // Add small padding at top
+          return maxVal + (range * 0.1);
+        },
+      },
+    },
+  };
+
+  return (
+    <div className="glass-strong w-full p-6 rounded-2xl shadow-glass dark:shadow-glass-dark">
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
+          Net Positions
+        </h3>
+        <div className="flex items-center gap-4 text-xs font-medium">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: colors.smallSpeculators }}></div>
+            <span className="text-gray-600 dark:text-gray-400">Small Specs</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: colors.largeSpeculators }}></div>
+            <span className="text-gray-600 dark:text-gray-400">Large Specs</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: colors.commercials }}></div>
+            <span className="text-gray-600 dark:text-gray-400">Commercials</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-0.5" style={{ backgroundColor: colors.openInterest }}></div>
+            <span className="text-gray-600 dark:text-gray-400">Open Interest</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="h-[600px]">
+        <Chart type="bar" data={chartJsData} options={options} />
+      </div>
+    </div>
+  );
+};

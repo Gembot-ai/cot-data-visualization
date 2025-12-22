@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: timescale/timescaledb:latest-pg15
+    environment:
+      POSTGRES_USER: cot_user
+      POSTGRES_PASSWORD: dev_password
+      POSTGRES_DB: cot_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cot_user -d cot_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ./cot-backend
+      dockerfile: Dockerfile
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://cot_user:dev_password@postgres:5432/cot_db
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: dev-secret
+      FRONTEND_URL: http://localhost:3000
+      PORT: 3001
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./cot-backend/src:/app/src
+    command: npm run dev
+
+  frontend:
+    image: node:20-alpine
+    working_dir: /app
+    environment:
+      VITE_API_URL: http://localhost:3001
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+    volumes:
+      - ./cot-frontend:/app
+    command: sh -c "npm install && npm run dev -- --host --port 3000"
+
+volumes:
+  postgres_data:
