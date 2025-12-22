@@ -10,7 +10,6 @@ interface MetricsPanelProps {
 export const MetricsPanel: React.FC<MetricsPanelProps> = ({
   data,
   previousData,
-  darkMode = false,
 }) => {
   const commercialNet = data.commercial_long - data.commercial_short;
   const nonCommercialNet = data.non_commercial_long - data.non_commercial_short;

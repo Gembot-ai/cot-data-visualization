@@ -13,7 +13,6 @@ interface MarketSelectorProps {
 export const MarketSelector: React.FC<MarketSelectorProps> = ({
   selectedMarkets,
   onChange,
-  darkMode = false,
   multiSelect = false,
 }) => {
   const { data: marketsData, isLoading } = useMarkets();

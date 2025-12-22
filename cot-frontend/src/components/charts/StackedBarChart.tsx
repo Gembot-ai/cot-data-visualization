@@ -227,7 +227,7 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
           }
         },
         // Force open interest to use upper half of chart
-        min: function(context: any) {
+        min: (function(context: any) {
           const data = context.chart.data.datasets.find((d: any) => d.yAxisID === 'y1')?.data || [];
           const values = data.filter((v: any) => v !== null && v !== undefined) as number[];
           if (values.length === 0) return 0;
@@ -236,8 +236,8 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
           const range = maxVal - minVal;
           // Start scale at min - (range * 2) to push line to top half
           return minVal - (range * 2);
-        },
-        max: function(context: any) {
+        }) as any,
+        max: (function(context: any) {
           const data = context.chart.data.datasets.find((d: any) => d.yAxisID === 'y1')?.data || [];
           const values = data.filter((v: any) => v !== null && v !== undefined) as number[];
           if (values.length === 0) return 100;
@@ -246,7 +246,7 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
           const range = maxVal - minVal;
           // Add small padding at top
           return maxVal + (range * 0.1);
-        },
+        }) as any,
       },
     },
   };
@@ -278,7 +278,7 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
       </div>
 
       <div className="h-[600px]">
-        <Chart type="bar" data={chartJsData} options={options} />
+        <Chart type="bar" data={chartJsData as any} options={options} />
       </div>
     </div>
   );

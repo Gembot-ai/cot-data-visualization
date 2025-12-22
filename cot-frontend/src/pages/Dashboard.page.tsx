@@ -91,7 +91,7 @@ export const DashboardPage: React.FC = () => {
           </div>
           <div className="xl:col-span-1">
             {latestQuery.data && historyQuery.data && (
-              <MetricsPanel data={latestQuery.data.report} previousData={historyQuery.data.reports.find(r => r.source === 'CFTC_API' && new Date(r.report_date) < new Date(latestQuery.data.report.report_date))} darkMode={darkMode} />
+              <MetricsPanel data={latestQuery.data.report} previousData={historyQuery.data.reports.find((r: any) => r.source === 'CFTC_API' && new Date(r.report_date) < new Date(latestQuery.data.report.report_date))} darkMode={darkMode} />
             )}
           </div>
         </div>
