@@ -6,6 +6,7 @@ import { env } from './config/env';
 import { cotRoutes } from './api/routes/cot.routes';
 import { marketsRoutes } from './api/routes/markets.routes';
 import { errorHandler } from './api/middlewares/error-handler';
+import { authMiddleware } from './api/middlewares/auth.middleware';
 import { logger } from './utils/logger';
 
 export async function buildApp() {
@@ -22,6 +23,14 @@ export async function buildApp() {
     origin: env.FRONTEND_URL || 'http://localhost:3000',
     credentials: true
   });
+
+  // Global password authentication (if APP_PASSWORD is set)
+  if (env.APP_PASSWORD) {
+    fastify.addHook('onRequest', authMiddleware);
+    logger.info('🔒 App password protection enabled');
+  } else {
+    logger.info('🔓 App password protection disabled (no APP_PASSWORD set)');
+  }
 
   // API Routes
   await fastify.register(cotRoutes, { prefix: '/api/v1' });

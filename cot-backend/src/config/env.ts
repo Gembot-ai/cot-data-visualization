@@ -24,4 +24,7 @@ export const env = {
 
   // Job Scheduler
   WEEKLY_FETCH_CRON: process.env.WEEKLY_FETCH_CRON || '0 20 * * FRI',
+
+  // App Password Protection (optional - leave empty to disable)
+  APP_PASSWORD: process.env.APP_PASSWORD || '',
 };
