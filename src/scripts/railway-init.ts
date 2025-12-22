@@ -112,21 +112,25 @@ async function railwayInit() {
     const count = parseInt(reportCount.rows[0].count);
 
     if (count === 0) {
-      logger.info('📥 No CoT data found. You can load data by:');
-      logger.info('   Option 1: Run "npm run fetch-all" to fetch from CFTC API (~10 min)');
-      logger.info('   Option 2: Import data from backup using Railway CLI');
-      logger.info('   See RAILWAY_DEPLOYMENT.md for instructions');
+      logger.info('📥 No CoT data found. Starting automatic data fetch from CFTC API...');
+      logger.info('⏱️  This will take approximately 10-15 minutes. Please be patient.');
+
+      // Close pool before spawning child process
+      await pool.end();
+
+      // Import and run the fetch script
+      const { fetchAllCotData } = await import('./fetch-all-cot-data');
+      await fetchAllCotData();
+
+      logger.info('✅ Initial data fetch completed!');
     } else {
       logger.info({ reports: count }, '✅ CoT data already loaded');
     }
 
     logger.info('✨ Railway initialization complete!');
-    process.exit(0);
   } catch (error) {
     logger.error({ error }, '❌ Railway initialization failed');
-    process.exit(1);
-  } finally {
-    await pool.end();
+    throw error;
   }
 }
 

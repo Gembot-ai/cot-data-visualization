@@ -219,13 +219,27 @@ async function fetchAllCotData() {
       });
     }
 
-    process.exit(0);
   } catch (error) {
     logger.error({ error }, 'Failed to fetch CoT data');
-    process.exit(1);
-  } finally {
-    await pool.end();
+    throw error;
   }
 }
 
-fetchAllCotData();
+// Export for use in other scripts
+export { fetchAllCotData };
+
+// Run directly if this is the main module
+if (require.main === module) {
+  fetchAllCotData()
+    .then(() => {
+      logger.info('✅ Done!');
+      process.exit(0);
+    })
+    .catch((error) => {
+      logger.error({ error }, '❌ Failed');
+      process.exit(1);
+    })
+    .finally(() => {
+      pool.end();
+    });
+}
