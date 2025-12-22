@@ -37,11 +37,14 @@ function App() {
   const handleLogin = async (enteredPassword: string) => {
     // Test password by making a request to the API
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || '/api/v1'}/markets?password=${enteredPassword}`);
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      const response = await fetch(`${apiUrl}/api/v1/markets${enteredPassword ? `?password=${enteredPassword}` : ''}`);
 
       if (response.ok) {
         setPassword(enteredPassword);
-        localStorage.setItem('app_password', enteredPassword);
+        if (enteredPassword) {
+          localStorage.setItem('app_password', enteredPassword);
+        }
         setIsAuthenticated(true);
       } else {
         alert('Invalid password');
