@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
   BarElement,
+  BarController,
   LineElement,
+  LineController,
   PointElement,
   Title,
   Tooltip,
@@ -18,7 +20,9 @@ ChartJS.register(
   CategoryScale,
   LinearScale,
   BarElement,
+  BarController,
   LineElement,
+  LineController,
   PointElement,
   Title,
   Tooltip,
@@ -30,16 +34,44 @@ interface StackedBarChartProps {
   darkMode?: boolean;
 }
 
+type DateRange = '1M' | '3M' | '6M' | '1Y' | '2Y' | '5Y' | 'ALL' | 'CUSTOM';
+
 export const StackedBarChart: React.FC<StackedBarChartProps> = ({
   data,
   darkMode = false,
 }) => {
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [dateRange, setDateRange] = useState<DateRange>('1Y');
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
+  const [showCustomDatePicker, setShowCustomDatePicker] = useState(false);
+  const chartContainerRef = useRef<HTMLDivElement>(null);
+
   const colors = {
     smallSpeculators: '#fbbf24',
     largeSpeculators: '#3b82f6',
     commercials: '#ef4444',
     openInterest: '#10b981',
   };
+
+  const toggleFullscreen = () => {
+    if (!chartContainerRef.current) return;
+
+    if (!isFullscreen) {
+      chartContainerRef.current.requestFullscreen();
+    } else {
+      document.exitFullscreen();
+    }
+  };
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
 
   // Prefer CFTC_API data, but include all data if no CFTC data exists
   const hasCFTCData = data.some((d: any) => d.source === 'CFTC_API');
@@ -57,6 +89,52 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
     }
   });
   filteredData = Array.from(dateMap.values());
+
+  // Apply date range filter
+  const getFilteredByDateRange = (data: any[]) => {
+    if (dateRange === 'CUSTOM' && customStartDate && customEndDate) {
+      const start = new Date(customStartDate);
+      const end = new Date(customEndDate);
+      return data.filter(d => {
+        const reportDate = new Date(d.report_date);
+        return reportDate >= start && reportDate <= end;
+      });
+    }
+
+    if (dateRange === 'ALL') {
+      return data;
+    }
+
+    const now = new Date();
+    let cutoffDate: Date;
+
+    switch (dateRange) {
+      case '1M':
+        cutoffDate = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+        break;
+      case '3M':
+        cutoffDate = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
+        break;
+      case '6M':
+        cutoffDate = new Date(now.getFullYear(), now.getMonth() - 6, now.getDate());
+        break;
+      case '1Y':
+        cutoffDate = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+        break;
+      case '2Y':
+        cutoffDate = new Date(now.getFullYear() - 2, now.getMonth(), now.getDate());
+        break;
+      case '5Y':
+        cutoffDate = new Date(now.getFullYear() - 5, now.getMonth(), now.getDate());
+        break;
+      default:
+        return data;
+    }
+
+    return data.filter(d => new Date(d.report_date) >= cutoffDate);
+  };
+
+  filteredData = getFilteredByDateRange(filteredData);
 
   const chartData = filteredData
     .slice()
@@ -252,32 +330,108 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
   };
 
   return (
-    <div className="glass-strong w-full p-6 rounded-2xl shadow-glass dark:shadow-glass-dark">
-      <div className="flex items-center justify-between mb-6">
+    <div
+      ref={chartContainerRef}
+      className={`glass-strong w-full p-6 rounded-2xl shadow-glass dark:shadow-glass-dark ${
+        isFullscreen ? 'bg-white dark:bg-gray-900' : ''
+      }`}
+    >
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
         <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
           Net Positions
         </h3>
-        <div className="flex items-center gap-4 text-xs font-medium">
+
+        <div className="flex items-center gap-6 flex-wrap">
+          {/* Date Range Selector */}
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: colors.smallSpeculators }}></div>
-            <span className="text-gray-600 dark:text-gray-400">Small Specs</span>
+            {(['1M', '3M', '6M', '1Y', '2Y', '5Y', 'ALL', 'CUSTOM'] as DateRange[]).map((range) => (
+              <button
+                key={range}
+                onClick={() => {
+                  setDateRange(range);
+                  if (range === 'CUSTOM') {
+                    setShowCustomDatePicker(true);
+                  } else {
+                    setShowCustomDatePicker(false);
+                  }
+                }}
+                className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
+                  dateRange === range
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                }`}
+              >
+                {range}
+              </button>
+            ))}
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: colors.largeSpeculators }}></div>
-            <span className="text-gray-600 dark:text-gray-400">Large Specs</span>
+
+          {/* Legend */}
+          <div className="flex items-center gap-4 text-xs font-medium">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: colors.smallSpeculators }}></div>
+              <span className="text-gray-600 dark:text-gray-400">Small Specs</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: colors.largeSpeculators }}></div>
+              <span className="text-gray-600 dark:text-gray-400">Large Specs</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: colors.commercials }}></div>
+              <span className="text-gray-600 dark:text-gray-400">Commercials</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-0.5" style={{ backgroundColor: colors.openInterest }}></div>
+              <span className="text-gray-600 dark:text-gray-400">Open Interest</span>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: colors.commercials }}></div>
-            <span className="text-gray-600 dark:text-gray-400">Commercials</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-0.5" style={{ backgroundColor: colors.openInterest }}></div>
-            <span className="text-gray-600 dark:text-gray-400">Open Interest</span>
-          </div>
+
+          {/* Fullscreen Button */}
+          <button
+            onClick={toggleFullscreen}
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+            title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+          >
+            {isFullscreen ? (
+              <svg className="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            ) : (
+              <svg className="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+              </svg>
+            )}
+          </button>
         </div>
       </div>
 
-      <div className="h-[600px]">
+      {/* Custom Date Picker */}
+      {showCustomDatePicker && (
+        <div className="mb-4 p-4 glass-strong rounded-lg flex items-center gap-4 flex-wrap">
+          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">From:</label>
+          <input
+            type="date"
+            value={customStartDate}
+            onChange={(e) => setCustomStartDate(e.target.value)}
+            className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+          />
+          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">To:</label>
+          <input
+            type="date"
+            value={customEndDate}
+            onChange={(e) => setCustomEndDate(e.target.value)}
+            className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+          />
+          <button
+            onClick={() => setShowCustomDatePicker(false)}
+            className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors"
+          >
+            Apply
+          </button>
+        </div>
+      )}
+
+      <div className={isFullscreen ? 'h-[calc(100vh-120px)]' : 'h-[600px]'}>
         <Chart type="bar" data={chartJsData as any} options={options} />
       </div>
     </div>
