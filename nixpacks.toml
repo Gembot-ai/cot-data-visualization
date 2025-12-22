@@ -14,4 +14,4 @@ cmds = [
 ]
 
 [start]
-cmd = "cd cot-backend && node dist/server.js"
+cmd = "cd cot-backend && npm start"
