@@ -7,7 +7,7 @@ FROM node:20-alpine AS backend-builder
 WORKDIR /app/backend
 
 COPY cot-backend/package*.json ./
-RUN npm ci --only=production && npm ci --only=development
+RUN npm install
 
 COPY cot-backend/tsconfig.json ./
 COPY cot-backend/src ./src
@@ -20,7 +20,7 @@ FROM node:20-alpine AS frontend-builder
 WORKDIR /app/frontend
 
 COPY cot-frontend/package*.json ./
-RUN npm ci
+RUN npm install
 
 COPY cot-frontend/ ./
 
