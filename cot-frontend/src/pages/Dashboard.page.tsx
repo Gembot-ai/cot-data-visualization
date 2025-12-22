@@ -7,15 +7,30 @@ import { MarketSelector } from '../components/dashboard/MarketSelector';
 export const DashboardPage: React.FC = () => {
   const [selectedMarkets, setSelectedMarkets] = useState<string[]>(['GC']);
   const [darkMode] = useState(false);
+  const [allData, setAllData] = useState<any[]>([]);
 
   const selectedMarket = selectedMarkets[0] || 'GC';
   const latestQuery = useCotData(selectedMarket);
 
-  // Fetch 2 years of data by default (chart will filter to smaller ranges)
+  // Initial load: Fetch 1 year of data for fast initial render
   const endDate = new Date();
   const startDate = new Date();
-  startDate.setFullYear(startDate.getFullYear() - 2);
+  startDate.setFullYear(startDate.getFullYear() - 1);
   const historyQuery = useCotHistory(selectedMarket, startDate, endDate);
+
+  // Background fetch: Load 5 years of data silently after initial render
+  const bgStartDate = new Date();
+  bgStartDate.setFullYear(bgStartDate.getFullYear() - 5);
+  const backgroundQuery = useCotHistory(selectedMarket, bgStartDate, endDate);
+
+  // Combine data: use background data if available, otherwise use initial data
+  React.useEffect(() => {
+    if (backgroundQuery.data?.reports) {
+      setAllData(backgroundQuery.data.reports);
+    } else if (historyQuery.data?.reports) {
+      setAllData(historyQuery.data.reports);
+    }
+  }, [historyQuery.data, backgroundQuery.data]);
 
   // Debug logging
   console.log('Query states:', {
@@ -28,6 +43,7 @@ export const DashboardPage: React.FC = () => {
     historyReports: historyQuery.data?.reports?.length
   });
 
+  // Only block on initial queries, not background fetch
   if (latestQuery.isLoading || historyQuery.isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -81,13 +97,13 @@ export const DashboardPage: React.FC = () => {
 
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           <div className="xl:col-span-2">
-            {historyQuery.data && historyQuery.data.reports.length > 0 && (
-              <StackedBarChart data={[...historyQuery.data.reports, ...(latestQuery.data && !historyQuery.data.reports.some(r => r.report_date === latestQuery.data.report.report_date) ? [latestQuery.data.report] : [])]} darkMode={darkMode} />
+            {allData.length > 0 && (
+              <StackedBarChart data={[...allData, ...(latestQuery.data && !allData.some(r => r.report_date === latestQuery.data.report.report_date) ? [latestQuery.data.report] : [])]} darkMode={darkMode} />
             )}
           </div>
           <div className="xl:col-span-1">
-            {latestQuery.data && historyQuery.data && (
-              <MetricsPanel data={latestQuery.data.report} previousData={historyQuery.data.reports.find((r: any) => r.source === 'CFTC_API' && new Date(r.report_date) < new Date(latestQuery.data.report.report_date))} darkMode={darkMode} />
+            {latestQuery.data && allData.length > 0 && (
+              <MetricsPanel data={latestQuery.data.report} previousData={allData.find((r: any) => r.source === 'CFTC_API' && new Date(r.report_date) < new Date(latestQuery.data.report.report_date))} darkMode={darkMode} />
             )}
           </div>
         </div>
