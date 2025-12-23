@@ -29,6 +29,8 @@ async function railwayInit() {
         category VARCHAR(50) NOT NULL,
         exchange VARCHAR(100),
         description TEXT,
+        contract_unit VARCHAR(100),
+        tick_size VARCHAR(100),
         active BOOLEAN DEFAULT true,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -98,13 +100,28 @@ async function railwayInit() {
         category: data.category,
         exchange: data.exchange,
         description: `${data.name} futures contract`,
+        contract_unit: (data as any).contractUnit || null,
+        tick_size: (data as any).tickSize || null,
         active: true
       }));
 
       await marketsRepo.initializeMarkets(marketsData);
       logger.info({ count: marketsData.length }, '✅ Markets initialized');
     } else {
-      logger.info({ count: existingMarkets.length }, '✅ Markets already initialized');
+      logger.info('📈 Updating markets with contract specifications...');
+      const marketsData = Object.entries(MARKETS).map(([symbol, data]) => ({
+        symbol,
+        name: data.name,
+        category: data.category,
+        exchange: data.exchange,
+        description: `${data.name} futures contract`,
+        contract_unit: (data as any).contractUnit || null,
+        tick_size: (data as any).tickSize || null,
+        active: true
+      }));
+
+      await marketsRepo.initializeMarkets(marketsData);
+      logger.info({ count: existingMarkets.length }, '✅ Markets updated');
     }
 
     // 3. Check if we should fetch initial data
