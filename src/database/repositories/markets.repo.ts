@@ -86,13 +86,15 @@ export class MarketsRepository {
 
       for (const market of markets) {
         await client.query(
-          `INSERT INTO markets (symbol, name, category, exchange, description, active)
-           VALUES ($1, $2, $3, $4, $5, $6)
+          `INSERT INTO markets (symbol, name, category, exchange, description, contract_unit, tick_size, active)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
            ON CONFLICT (symbol) DO UPDATE
            SET name = EXCLUDED.name,
                category = EXCLUDED.category,
                exchange = EXCLUDED.exchange,
                description = EXCLUDED.description,
+               contract_unit = EXCLUDED.contract_unit,
+               tick_size = EXCLUDED.tick_size,
                updated_at = CURRENT_TIMESTAMP`,
           [
             market.symbol,
@@ -100,13 +102,15 @@ export class MarketsRepository {
             market.category,
             market.exchange,
             market.description,
+            market.contract_unit,
+            market.tick_size,
             market.active
           ]
         );
       }
 
       await client.query('COMMIT');
-      logger.info({ count: markets.length }, 'Markets initialized');
+      logger.info({ count: markets.length }, 'Markets initialized/updated');
     } catch (error) {
       await client.query('ROLLBACK');
       logger.error({ error }, 'Failed to initialize markets');

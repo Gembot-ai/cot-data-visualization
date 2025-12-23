@@ -10,6 +10,12 @@ export const CFTC_MARKET_NAMES: Record<string, string[]> = {
   YM: ['DOW JONES', 'E-MINI DOW'],
   RTY: ['RUSSELL', 'E-MINI RUSSELL'],
 
+  // Treasury Bonds & Notes
+  ZB: ['UST BOND', 'ULTRA UST BOND', 'T-BONDS', '30-YEAR'],
+  ZN: ['UST 10Y NOTE', '10Y NOTE', 'T-NOTES, 6.5-10 YEAR'],
+  ZF: ['UST 5Y NOTE', '5Y NOTE', 'T-NOTES, 4-5 YEAR'],
+  ZT: ['UST 2Y NOTE', '2Y NOTE', 'T-NOTES, 1-2 YEAR'],
+
   // Energies
   CL: ['CRUDE OIL', 'WTI'],
   NG: ['NATURAL GAS', 'HENRY HUB'],

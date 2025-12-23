@@ -26,11 +26,28 @@ async function start() {
         category: data.category,
         exchange: data.exchange,
         description: `${data.name} futures contract`,
+        contract_unit: (data as any).contractUnit || null,
+        tick_size: (data as any).tickSize || null,
         active: true
       }));
 
       await marketsRepo.initializeMarkets(marketsData);
       logger.info({ count: marketsData.length }, 'Markets initialized');
+    } else {
+      // Update existing markets with new contract metadata
+      logger.info('Updating markets with contract specifications...');
+      const marketsData = Object.entries(MARKETS).map(([symbol, data]) => ({
+        symbol,
+        name: data.name,
+        category: data.category,
+        exchange: data.exchange,
+        description: `${data.name} futures contract`,
+        contract_unit: (data as any).contractUnit || null,
+        tick_size: (data as any).tickSize || null,
+        active: true
+      }));
+
+      await marketsRepo.initializeMarkets(marketsData);
     }
 
     // Build and start Fastify app

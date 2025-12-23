@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS markets (
   exchange VARCHAR(50),
   description TEXT,
   contract_unit VARCHAR(100),
-  tick_size DECIMAL(10, 6),
+  tick_size VARCHAR(100),
   active BOOLEAN DEFAULT true,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
