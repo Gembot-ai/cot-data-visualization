@@ -7,10 +7,32 @@ import { MarketSelector } from '../components/dashboard/MarketSelector';
 export const DashboardPage: React.FC = () => {
   const [selectedMarkets, setSelectedMarkets] = useState<string[]>(['GC']);
   const [darkMode] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const selectedMarket = selectedMarkets[0] || 'GC';
   const latestQuery = useCotData(selectedMarket);
   const historyQuery = useCotHistory(selectedMarket);
+
+  const handleUpdateData = async () => {
+    setIsUpdating(true);
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || '';
+      const password = (window as any).__APP_PASSWORD__ || '';
+      const response = await fetch(`${apiUrl}/api/v1/cot/update${password ? `?password=${password}` : ''}`, {
+        method: 'POST',
+      });
+
+      if (response.ok) {
+        alert('Data update started! This will take 5-10 minutes. Refresh the page to see new data.');
+      } else {
+        alert('Failed to trigger update');
+      }
+    } catch (error) {
+      alert('Error triggering update');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
   if (latestQuery.isLoading || historyQuery.isLoading) {
     return (
@@ -49,12 +71,26 @@ export const DashboardPage: React.FC = () => {
             </h1>
             <p className="text-sm text-gray-600 font-medium">CFTC Weekly Reports</p>
           </div>
-          <div className="glass-strong px-6 py-3 rounded-2xl shadow-glass">
-            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Last Updated</div>
-            <div className="text-lg font-bold text-gray-900">
-              {latestQuery.data ? new Date(latestQuery.data.report.report_date).toLocaleDateString('en-US', {
-                month: 'short', day: 'numeric', year: 'numeric'
-              }) : '—'}
+          <div className="flex items-center gap-4">
+            <button
+              onClick={handleUpdateData}
+              disabled={isUpdating}
+              className="glass-strong px-6 py-3 rounded-2xl shadow-glass hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                {isUpdating ? 'Updating...' : 'Update Data'}
+              </div>
+              <div className="text-sm font-bold text-gray-900">
+                {isUpdating ? '⏳ Please wait' : '🔄 Refresh Now'}
+              </div>
+            </button>
+            <div className="glass-strong px-6 py-3 rounded-2xl shadow-glass">
+              <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Last Updated</div>
+              <div className="text-lg font-bold text-gray-900">
+                {latestQuery.data ? new Date(latestQuery.data.report.report_date).toLocaleDateString('en-US', {
+                  month: 'short', day: 'numeric', year: 'numeric'
+                }) : '—'}
+              </div>
             </div>
           </div>
         </div>
