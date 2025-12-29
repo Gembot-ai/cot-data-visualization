@@ -29,12 +29,28 @@ async function railwayInit() {
         category VARCHAR(50) NOT NULL,
         exchange VARCHAR(100),
         description TEXT,
-        contract_unit VARCHAR(100),
-        tick_size VARCHAR(100),
         active BOOLEAN DEFAULT true,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
+
+      -- Add contract metadata columns if they don't exist (migration)
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_name = 'markets' AND column_name = 'contract_unit'
+        ) THEN
+          ALTER TABLE markets ADD COLUMN contract_unit VARCHAR(100);
+        END IF;
+
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_name = 'markets' AND column_name = 'tick_size'
+        ) THEN
+          ALTER TABLE markets ADD COLUMN tick_size VARCHAR(100);
+        END IF;
+      END$$;
 
       -- Create cot_reports table
       CREATE TABLE IF NOT EXISTS cot_reports (
