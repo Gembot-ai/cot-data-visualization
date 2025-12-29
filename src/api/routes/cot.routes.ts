@@ -1,5 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { CotController } from '../controllers/cot.controller';
+import { fetchAllCotData } from '../../scripts/fetch-all-cot-data';
+import { logger } from '../../utils/logger';
 
 export async function cotRoutes(fastify: FastifyInstance) {
   const controller = new CotController();
@@ -78,5 +80,30 @@ export async function cotRoutes(fastify: FastifyInstance) {
   // GET /api/v1/cot/latest/all - All markets latest data
   fastify.get('/cot/latest/all', async (request, reply) => {
     return controller.getAllLatest();
+  });
+
+  // POST /api/v1/cot/update - Manually trigger data update
+  fastify.post('/cot/update', async (request, reply) => {
+    try {
+      logger.info('Manual update triggered via API');
+
+      // Run update in background, don't wait
+      fetchAllCotData().catch(err => {
+        logger.error({ err }, 'Background update failed');
+      });
+
+      return {
+        success: true,
+        message: 'Data update started in background',
+        timestamp: new Date().toISOString()
+      };
+    } catch (error) {
+      logger.error({ error }, 'Failed to trigger update');
+      return reply.code(500).send({
+        success: false,
+        message: 'Failed to trigger update',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
   });
 }
