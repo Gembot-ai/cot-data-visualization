@@ -35,14 +35,30 @@ async function fetchAllCotData() {
   const startTime = Date.now();
 
   try {
-    logger.info('🚀 Starting comprehensive CoT data fetch from CFTC API (from 2000-01-01 to present)...');
-
     const marketsRepo = new MarketsRepository();
     const reportsRepo = new CotReportsRepository();
 
     // Get all markets
     const markets = await marketsRepo.findAll();
     logger.info({ count: markets.length }, 'Markets loaded from database');
+
+    // Check latest report date in database
+    const latestReport = await pool.query(`
+      SELECT MAX(report_date) as latest_date
+      FROM cot_reports
+      WHERE source = 'CFTC_API'
+    `);
+
+    let startDate = '2000-01-01';
+    if (latestReport.rows[0]?.latest_date) {
+      // Fetch from 30 days before the latest date to ensure we don't miss any updates
+      const latest = new Date(latestReport.rows[0].latest_date);
+      latest.setDate(latest.getDate() - 30);
+      startDate = latest.toISOString().split('T')[0];
+      logger.info(`📊 Found existing data up to ${latestReport.rows[0].latest_date}, fetching from ${startDate}...`);
+    } else {
+      logger.info('🚀 No existing data found, starting comprehensive fetch from 2000-01-01...');
+    }
 
     // Create market name to ID map
     const marketMap = new Map<string, number>();
@@ -58,9 +74,6 @@ async function fetchAllCotData() {
     let hasMore = true;
     const maxBatches = 500; // Increased to fetch all historical data from 2000 (500k records max)
     let batchCount = 0;
-
-    // Fetch data from January 1, 2000 onwards
-    const startDate = '2000-01-01';
 
     while (hasMore && batchCount < maxBatches) {
       batchCount++;
