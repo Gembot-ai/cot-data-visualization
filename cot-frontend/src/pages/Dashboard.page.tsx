@@ -11,11 +11,7 @@ export const DashboardPage: React.FC = () => {
 
   const selectedMarket = selectedMarkets[0] || 'GC';
   const latestQuery = useCotData(selectedMarket);
-
-  // Default to 3 months of history
-  const threeMonthsAgo = new Date();
-  threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
-  const historyQuery = useCotHistory(selectedMarket, threeMonthsAgo);
+  const historyQuery = useCotHistory(selectedMarket);
 
   const handleUpdateData = async () => {
     setIsUpdating(true);
