@@ -65,28 +65,31 @@ export const DashboardPage: React.FC = () => {
     <div className="min-h-screen">
       <div className="max-w-[1600px] mx-auto px-6 py-10">
         <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-              Commitment of Traders
-            </h1>
-            <p className="text-sm text-gray-600 font-medium">CFTC Weekly Reports</p>
+          <div className="flex items-center gap-4">
+            <img src="/images/eccuity-logo.svg" alt="Eccuity" className="h-12 w-12" />
+            <div>
+              <h1 className="text-4xl font-bold mb-2 text-eccuity-dark-300">
+                Commitment of Traders
+              </h1>
+              <p className="text-sm text-eccuity-light-400 font-medium">CFTC Weekly Reports</p>
+            </div>
           </div>
           <div className="flex items-center gap-4">
             <button
               onClick={handleUpdateData}
               disabled={isUpdating}
-              className="glass-strong px-6 py-3 rounded-2xl shadow-glass hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="glass-strong px-6 py-3 rounded-2xl shadow-glass hover:shadow-lg hover:border-eccuity-coral/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+              <div className="text-xs font-semibold text-eccuity-light-400 uppercase tracking-wider mb-1">
                 {isUpdating ? 'Updating...' : 'Update Data'}
               </div>
-              <div className="text-sm font-bold text-gray-900">
+              <div className="text-sm font-bold text-eccuity-dark-300">
                 {isUpdating ? '⏳ Please wait' : '🔄 Refresh Now'}
               </div>
             </button>
-            <div className="glass-strong px-6 py-3 rounded-2xl shadow-glass">
-              <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Last Updated</div>
-              <div className="text-lg font-bold text-gray-900">
+            <div className="glass-strong px-6 py-3 rounded-2xl shadow-glass border-eccuity-coral/20">
+              <div className="text-xs font-semibold text-eccuity-light-400 uppercase tracking-wider mb-1">Last Updated</div>
+              <div className="text-lg font-bold text-eccuity-dark-300">
                 {latestQuery.data ? new Date(latestQuery.data.report.report_date).toLocaleDateString('en-US', {
                   month: 'short', day: 'numeric', year: 'numeric'
                 }) : '—'}
