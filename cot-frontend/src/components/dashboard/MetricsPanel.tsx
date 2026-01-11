@@ -145,39 +145,57 @@ export const MetricsPanel: React.FC<MetricsPanelProps> = ({
 
         <div className="pt-6 mt-6 border-t border-gray-200 dark:border-gray-700">
           <div className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-4">
-            Position Breakdown
+            Detailed Positions
           </div>
-          <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Commercial Long</span>
-              <span className="text-sm font-bold text-gray-900 dark:text-white">{commercialLongPct.toFixed(1)}%</span>
-            </div>
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-              <div className="bg-red-500 h-2 rounded-full transition-all duration-500" style={{ width: `${commercialLongPct}%` }}></div>
+          <div className="space-y-4">
+            {/* Commercial Positions */}
+            <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 p-4 rounded-xl">
+              <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">COMMERCIAL</div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">Long</div>
+                  <div className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
+                    {data.commercial_long.toLocaleString()}
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    {commercialLongPct.toFixed(1)}% of OI
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">Short</div>
+                  <div className="text-lg font-bold text-red-600 dark:text-red-400">
+                    {data.commercial_short.toLocaleString()}
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    {commercialShortPct.toFixed(1)}% of OI
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Commercial Short</span>
-              <span className="text-sm font-bold text-gray-900 dark:text-white">{commercialShortPct.toFixed(1)}%</span>
-            </div>
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-              <div className="bg-red-400 h-2 rounded-full transition-all duration-500" style={{ width: `${commercialShortPct}%` }}></div>
-            </div>
-
-            <div className="flex justify-between items-center mt-4">
-              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Speculative Long</span>
-              <span className="text-sm font-bold text-gray-900 dark:text-white">{nonCommercialLongPct.toFixed(1)}%</span>
-            </div>
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-              <div className="bg-blue-500 h-2 rounded-full transition-all duration-500" style={{ width: `${nonCommercialLongPct}%` }}></div>
-            </div>
-
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Speculative Short</span>
-              <span className="text-sm font-bold text-gray-900 dark:text-white">{nonCommercialShortPct.toFixed(1)}%</span>
-            </div>
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-              <div className="bg-blue-400 h-2 rounded-full transition-all duration-500" style={{ width: `${nonCommercialShortPct}%` }}></div>
+            {/* Speculative Positions */}
+            <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 p-4 rounded-xl">
+              <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">SPECULATIVE</div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">Long</div>
+                  <div className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
+                    {data.non_commercial_long.toLocaleString()}
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    {nonCommercialLongPct.toFixed(1)}% of OI
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">Short</div>
+                  <div className="text-lg font-bold text-red-600 dark:text-red-400">
+                    {data.non_commercial_short.toLocaleString()}
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    {nonCommercialShortPct.toFixed(1)}% of OI
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
