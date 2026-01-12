@@ -96,7 +96,7 @@ export const MetricsPanel: React.FC<MetricsPanelProps> = ({
 
         <MetricCard
           label="Open Interest"
-          value={data.open_interest.toLocaleString()}
+          value={Number(data.open_interest).toLocaleString('en-US')}
           change={openInterestChange}
           subValue="Total contracts"
           icon={
@@ -108,7 +108,7 @@ export const MetricsPanel: React.FC<MetricsPanelProps> = ({
 
         <MetricCard
           label="Commercial Net"
-          value={`${commercialNet >= 0 ? '+' : ''}${commercialNet.toLocaleString()}`}
+          value={`${commercialNet >= 0 ? '+' : ''}${Number(commercialNet).toLocaleString('en-US')}`}
           change={commercialNetChange}
           subValue={`${((commercialNet / data.open_interest) * 100).toFixed(1)}% of OI`}
           color={commercialNet >= 0 ? 'text-emerald-500 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'}
@@ -127,7 +127,7 @@ export const MetricsPanel: React.FC<MetricsPanelProps> = ({
 
         <MetricCard
           label="Speculative Net"
-          value={`${nonCommercialNet >= 0 ? '+' : ''}${nonCommercialNet.toLocaleString()}`}
+          value={`${nonCommercialNet >= 0 ? '+' : ''}${Number(nonCommercialNet).toLocaleString('en-US')}`}
           change={nonCommercialNetChange}
           subValue={`${((nonCommercialNet / data.open_interest) * 100).toFixed(1)}% of OI`}
           color={nonCommercialNet >= 0 ? 'text-emerald-500 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'}
@@ -156,7 +156,7 @@ export const MetricsPanel: React.FC<MetricsPanelProps> = ({
                 <div>
                   <div className="text-xs text-gray-500 dark:text-gray-400">Long</div>
                   <div className="text-base sm:text-lg font-bold text-emerald-600 dark:text-emerald-400">
-                    {data.commercial_long.toLocaleString()}
+                    {Number(data.commercial_long).toLocaleString('en-US')}
                   </div>
                   <div className="text-xs text-gray-500 dark:text-gray-400">
                     {commercialLongPct.toFixed(1)}% of OI
@@ -165,7 +165,7 @@ export const MetricsPanel: React.FC<MetricsPanelProps> = ({
                 <div>
                   <div className="text-xs text-gray-500 dark:text-gray-400">Short</div>
                   <div className="text-base sm:text-lg font-bold text-red-600 dark:text-red-400">
-                    {data.commercial_short.toLocaleString()}
+                    {Number(data.commercial_short).toLocaleString('en-US')}
                   </div>
                   <div className="text-xs text-gray-500 dark:text-gray-400">
                     {commercialShortPct.toFixed(1)}% of OI
@@ -181,7 +181,7 @@ export const MetricsPanel: React.FC<MetricsPanelProps> = ({
                 <div>
                   <div className="text-xs text-gray-500 dark:text-gray-400">Long</div>
                   <div className="text-base sm:text-lg font-bold text-emerald-600 dark:text-emerald-400">
-                    {data.non_commercial_long.toLocaleString()}
+                    {Number(data.non_commercial_long).toLocaleString('en-US')}
                   </div>
                   <div className="text-xs text-gray-500 dark:text-gray-400">
                     {nonCommercialLongPct.toFixed(1)}% of OI
@@ -190,7 +190,7 @@ export const MetricsPanel: React.FC<MetricsPanelProps> = ({
                 <div>
                   <div className="text-xs text-gray-500 dark:text-gray-400">Short</div>
                   <div className="text-base sm:text-lg font-bold text-red-600 dark:text-red-400">
-                    {data.non_commercial_short.toLocaleString()}
+                    {Number(data.non_commercial_short).toLocaleString('en-US')}
                   </div>
                   <div className="text-xs text-gray-500 dark:text-gray-400">
                     {nonCommercialShortPct.toFixed(1)}% of OI
