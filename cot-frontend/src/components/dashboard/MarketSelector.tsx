@@ -101,23 +101,23 @@ export const MarketSelector: React.FC<MarketSelectorProps> = ({
       <button
         ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
-        className="glass-strong w-full sm:w-auto px-6 py-3 rounded-xl shadow-glass dark:shadow-glass-dark hover:scale-105 transition-transform duration-200 flex items-center justify-between gap-4 min-w-[280px]"
+        className="glass-strong w-full px-3 sm:px-6 py-2.5 sm:py-3 rounded-lg sm:rounded-xl shadow-glass dark:shadow-glass-dark active:scale-95 sm:hover:scale-105 transition-transform duration-200 flex items-center justify-between gap-2 sm:gap-4 min-h-[48px]"
       >
-        <div className="flex items-center gap-3">
-          <span className="text-2xl font-bold text-gray-900 dark:text-white">
-            {selectedMarket?.symbol || 'Select Market'}
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+          <span className="text-base sm:text-2xl font-bold text-gray-900 dark:text-white whitespace-nowrap">
+            {selectedMarket?.symbol || 'Select'}
           </span>
           {selectedMarket && (
             <>
-              <div className="h-6 w-px bg-gray-300 dark:bg-gray-600"></div>
-              <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">
+              <div className="h-4 sm:h-6 w-px bg-gray-300 dark:bg-gray-600"></div>
+              <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-medium truncate">
                 {selectedMarket.name}
               </span>
             </>
           )}
         </div>
         <svg
-          className={`w-5 h-5 text-gray-500 dark:text-gray-400 transition-transform duration-200 ${
+          className={`w-4 sm:w-5 h-4 sm:h-5 text-gray-500 dark:text-gray-400 transition-transform duration-200 flex-shrink-0 ${
             isOpen ? 'rotate-180' : ''
           }`}
           fill="none"
@@ -131,48 +131,48 @@ export const MarketSelector: React.FC<MarketSelectorProps> = ({
       {isOpen && createPortal(
         <div
           ref={dropdownRef}
-          className="fixed w-full sm:w-[500px] glass-strong rounded-xl shadow-2xl p-4 max-h-[500px] overflow-hidden flex flex-col"
+          className="fixed left-3 right-3 sm:left-auto sm:right-auto sm:w-[500px] glass-strong rounded-2xl shadow-2xl p-3 sm:p-4 max-h-[75vh] sm:max-h-[500px] overflow-hidden flex flex-col"
           style={{
             top: dropdownPosition.top,
-            left: dropdownPosition.left,
-            minWidth: dropdownPosition.width,
+            left: window.innerWidth >= 640 ? dropdownPosition.left : '0.75rem',
+            right: window.innerWidth >= 640 ? 'auto' : '0.75rem',
             zIndex: 9999
           }}
         >
           {/* Search */}
-          <div className="mb-4">
+          <div className="mb-3">
             <input
               type="text"
               placeholder="Search markets..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-4 py-2 rounded-lg border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none"
+              className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none text-base"
               autoFocus
             />
           </div>
 
           {/* Markets list */}
-          <div className="overflow-y-auto flex-1 -mx-2 px-2 space-y-4">
+          <div className="overflow-y-auto flex-1 -mx-1 px-1 space-y-3">
             {Object.entries(groupedMarkets).map(([category, markets]) => (
               <div key={category}>
-                <div className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2 px-2">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2 px-2">
                   {category}
                 </div>
-                <div className="grid grid-cols-2 gap-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                   {markets.map((market) => (
                     <button
                       key={market.symbol}
                       onClick={() => handleMarketToggle(market.symbol)}
-                      className={`text-left px-3 py-2 rounded-lg text-sm transition-all duration-150 ${
+                      className={`text-left px-3 py-3 rounded-xl text-sm transition-all duration-150 min-h-[56px] active:scale-95 ${
                         selectedMarkets.includes(market.symbol)
-                          ? 'bg-brand-500 text-white shadow-md scale-[1.02]'
-                          : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
+                          ? 'bg-blue-500 text-white shadow-md'
+                          : 'bg-gray-50 dark:bg-gray-800 active:bg-gray-100 dark:active:bg-gray-700 text-gray-700 dark:text-gray-300'
                       }`}
                     >
-                      <div className="font-mono font-bold text-xs mb-0.5">
+                      <div className="font-mono font-bold text-sm mb-0.5">
                         {market.symbol}
                       </div>
-                      <div className="text-xs opacity-80 truncate">
+                      <div className="text-[11px] opacity-80 truncate">
                         {market.name}
                       </div>
                     </button>

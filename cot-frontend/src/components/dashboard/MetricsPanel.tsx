@@ -45,27 +45,28 @@ export const MetricsPanel: React.FC<MetricsPanelProps> = ({
     color?: string;
     icon?: React.ReactNode;
   }) => (
-    <div className="group relative p-5 rounded-xl bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 border border-gray-200 dark:border-gray-600 hover:border-brand-500 dark:hover:border-brand-400 transition-all duration-200 hover:shadow-lg">
+    <div className="group relative p-3 sm:p-5 rounded-lg sm:rounded-xl bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 border border-gray-200 dark:border-gray-600 hover:border-brand-500 dark:hover:border-brand-400 transition-all duration-200 hover:shadow-lg">
       {icon && (
-        <div className="absolute top-4 right-4 opacity-20 group-hover:opacity-30 transition-opacity">
+        <div className="hidden sm:block absolute top-4 right-4 opacity-20 group-hover:opacity-30 transition-opacity">
           {icon}
         </div>
       )}
-      <div className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">
+      <div className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">
         {label}
       </div>
-      <div className={`text-3xl font-bold ${color || 'text-gray-900 dark:text-white'}`}>
+      <div className={`text-xl sm:text-3xl font-bold ${color || 'text-gray-900 dark:text-white'}`}>
         {value}
       </div>
       {change !== undefined && change !== 0 && (
-        <div className={`text-sm mt-1 font-semibold flex items-center gap-1 ${
+        <div className={`text-[10px] sm:text-sm mt-1 font-semibold flex items-center gap-1 ${
           change > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
         }`}>
-          {change > 0 ? '▲' : '▼'} {Math.abs(change).toLocaleString()} from last week
+          {change > 0 ? '▲' : '▼'} {Math.abs(change).toLocaleString()}
+          <span className="hidden sm:inline">from last week</span>
         </div>
       )}
       {subValue && (
-        <div className="text-xs mt-2 font-medium text-gray-500 dark:text-gray-400">
+        <div className="text-[10px] sm:text-xs mt-1 sm:mt-2 font-medium text-gray-500 dark:text-gray-400">
           {subValue}
         </div>
       )}
@@ -73,12 +74,12 @@ export const MetricsPanel: React.FC<MetricsPanelProps> = ({
   );
 
   return (
-    <div className="glass-strong p-6 rounded-2xl shadow-glass dark:shadow-glass-dark h-fit sticky top-6">
-      <h3 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">
+    <div className="glass-strong p-3 sm:p-6 rounded-xl sm:rounded-2xl shadow-glass dark:shadow-glass-dark h-fit lg:sticky lg:top-6">
+      <h3 className="text-base sm:text-2xl font-bold mb-3 sm:mb-6 text-gray-900 dark:text-white">
         Latest Report
       </h3>
 
-      <div className="space-y-4">
+      <div className="space-y-2 sm:space-y-4">
         <MetricCard
           label="Report Date"
           value={new Date(data.report_date).toLocaleDateString('en-US', {
@@ -149,12 +150,12 @@ export const MetricsPanel: React.FC<MetricsPanelProps> = ({
           </div>
           <div className="space-y-4">
             {/* Commercial Positions */}
-            <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 p-4 rounded-xl">
+            <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 p-3 sm:p-4 rounded-xl">
               <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">COMMERCIAL</div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2 sm:gap-3">
                 <div>
                   <div className="text-xs text-gray-500 dark:text-gray-400">Long</div>
-                  <div className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
+                  <div className="text-base sm:text-lg font-bold text-emerald-600 dark:text-emerald-400">
                     {data.commercial_long.toLocaleString()}
                   </div>
                   <div className="text-xs text-gray-500 dark:text-gray-400">
@@ -163,7 +164,7 @@ export const MetricsPanel: React.FC<MetricsPanelProps> = ({
                 </div>
                 <div>
                   <div className="text-xs text-gray-500 dark:text-gray-400">Short</div>
-                  <div className="text-lg font-bold text-red-600 dark:text-red-400">
+                  <div className="text-base sm:text-lg font-bold text-red-600 dark:text-red-400">
                     {data.commercial_short.toLocaleString()}
                   </div>
                   <div className="text-xs text-gray-500 dark:text-gray-400">
@@ -174,12 +175,12 @@ export const MetricsPanel: React.FC<MetricsPanelProps> = ({
             </div>
 
             {/* Speculative Positions */}
-            <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 p-4 rounded-xl">
+            <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 p-3 sm:p-4 rounded-xl">
               <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">SPECULATIVE</div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2 sm:gap-3">
                 <div>
                   <div className="text-xs text-gray-500 dark:text-gray-400">Long</div>
-                  <div className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
+                  <div className="text-base sm:text-lg font-bold text-emerald-600 dark:text-emerald-400">
                     {data.non_commercial_long.toLocaleString()}
                   </div>
                   <div className="text-xs text-gray-500 dark:text-gray-400">
@@ -188,7 +189,7 @@ export const MetricsPanel: React.FC<MetricsPanelProps> = ({
                 </div>
                 <div>
                   <div className="text-xs text-gray-500 dark:text-gray-400">Short</div>
-                  <div className="text-lg font-bold text-red-600 dark:text-red-400">
+                  <div className="text-base sm:text-lg font-bold text-red-600 dark:text-red-400">
                     {data.non_commercial_short.toLocaleString()}
                   </div>
                   <div className="text-xs text-gray-500 dark:text-gray-400">

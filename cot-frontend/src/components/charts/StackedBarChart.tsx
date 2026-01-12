@@ -338,16 +338,64 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
   return (
     <div
       ref={chartContainerRef}
-      className={`glass-strong w-full p-6 rounded-2xl shadow-glass dark:shadow-glass-dark ${
+      className={`glass-strong w-full p-3 sm:p-6 rounded-xl sm:rounded-2xl shadow-glass dark:shadow-glass-dark ${
         isFullscreen ? 'bg-white dark:bg-gray-900' : ''
       }`}
     >
-      <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
+      {/* Mobile header - more compact */}
+      <div className="sm:hidden mb-3">
+        <h3 className="text-base font-bold text-gray-900 dark:text-white mb-2">
+          Net Positions
+        </h3>
+
+        {/* Mobile-optimized date range selector */}
+        <div className="flex gap-1 overflow-x-auto -mx-3 px-3 pb-2 scrollbar-hide">
+          {(['1M', '3M', '6M', '1Y', '2Y', 'ALL'] as DateRange[]).map((range) => (
+            <button
+              key={range}
+              onClick={() => {
+                setDateRange(range);
+                setShowCustomDatePicker(false);
+              }}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap min-w-[44px] active:scale-95 ${
+                dateRange === range
+                  ? 'bg-blue-500 text-white shadow-md'
+                  : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 active:bg-gray-200'
+              }`}
+            >
+              {range}
+            </button>
+          ))}
+        </div>
+
+        {/* Mobile legend - compact grid */}
+        <div className="grid grid-cols-2 gap-2 mt-3 text-[10px] font-semibold">
+          <div className="flex items-center gap-1.5">
+            <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: colors.smallSpeculators }}></div>
+            <span className="text-gray-600 dark:text-gray-400 truncate">Small Specs</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: colors.largeSpeculators }}></div>
+            <span className="text-gray-600 dark:text-gray-400 truncate">Large Specs</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: colors.commercials }}></div>
+            <span className="text-gray-600 dark:text-gray-400 truncate">Commercials</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-4 h-0.5 flex-shrink-0" style={{ backgroundColor: colors.openInterest }}></div>
+            <span className="text-gray-600 dark:text-gray-400 truncate">Open Interest</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Desktop header */}
+      <div className="hidden sm:flex items-center justify-between mb-6">
         <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
           Net Positions
         </h3>
 
-        <div className="flex items-center gap-6 flex-wrap">
+        <div className="flex items-center gap-4">
           {/* Date Range Selector */}
           <div className="flex items-center gap-2">
             {(['1M', '3M', '6M', '1Y', '2Y', '5Y', 'ALL', 'CUSTOM'] as DateRange[]).map((range) => (
@@ -372,26 +420,6 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
             ))}
           </div>
 
-          {/* Legend */}
-          <div className="flex items-center gap-4 text-xs font-medium">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: colors.smallSpeculators }}></div>
-              <span className="text-gray-600 dark:text-gray-400">Small Specs</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: colors.largeSpeculators }}></div>
-              <span className="text-gray-600 dark:text-gray-400">Large Specs</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: colors.commercials }}></div>
-              <span className="text-gray-600 dark:text-gray-400">Commercials</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-0.5" style={{ backgroundColor: colors.openInterest }}></div>
-              <span className="text-gray-600 dark:text-gray-400">Open Interest</span>
-            </div>
-          </div>
-
           {/* Fullscreen Button */}
           <button
             onClick={toggleFullscreen}
@@ -408,6 +436,26 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
               </svg>
             )}
           </button>
+        </div>
+      </div>
+
+      {/* Desktop Legend */}
+      <div className="hidden sm:flex flex-wrap items-center gap-4 text-xs font-medium mb-4">
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: colors.smallSpeculators }}></div>
+          <span className="text-gray-600 dark:text-gray-400">Small Specs</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: colors.largeSpeculators }}></div>
+          <span className="text-gray-600 dark:text-gray-400">Large Specs</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: colors.commercials }}></div>
+          <span className="text-gray-600 dark:text-gray-400">Commercials</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-0.5" style={{ backgroundColor: colors.openInterest }}></div>
+          <span className="text-gray-600 dark:text-gray-400">Open Interest</span>
         </div>
       </div>
 
@@ -437,7 +485,7 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
         </div>
       )}
 
-      <div className={isFullscreen ? 'h-[calc(100vh-120px)]' : 'h-[600px]'}>
+      <div className={isFullscreen ? 'h-[calc(100vh-120px)]' : 'h-[300px] sm:h-[600px]'}>
         <Chart key={chartKey} type="bar" data={chartJsData as any} options={options} />
       </div>
     </div>

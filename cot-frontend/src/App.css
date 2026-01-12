@@ -59,3 +59,47 @@ code {
 .glass-strong {
   @apply bg-white/95 dark:bg-gray-900/95 backdrop-blur-2xl border border-gray-200/80 dark:border-gray-700/80;
 }
+
+/* Mobile optimizations */
+@layer utilities {
+  /* Hide scrollbar but keep functionality */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Safe area padding for iOS */
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .safe-left {
+    padding-left: env(safe-area-inset-left);
+  }
+  .safe-right {
+    padding-right: env(safe-area-inset-right);
+  }
+  .pb-safe {
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+  }
+
+  /* Touch-friendly buttons */
+  @media (max-width: 640px) {
+    button {
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+  }
+}
+
+/* Smooth momentum scrolling on iOS */
+@supports (-webkit-overflow-scrolling: touch) {
+  * {
+    -webkit-overflow-scrolling: touch;
+  }
+}
