@@ -48,11 +48,26 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const [chartKey, setChartKey] = useState(0);
 
+  // Data series visibility state
+  const [visibleSeries, setVisibleSeries] = useState({
+    smallSpeculators: true,
+    largeSpeculators: true,
+    commercials: true,
+    openInterest: true,
+  });
+
   const colors = {
     smallSpeculators: '#fbbf24',
     largeSpeculators: '#3b82f6',
     commercials: '#ef4444',
     openInterest: '#10b981',
+  };
+
+  const toggleSeries = (series: keyof typeof visibleSeries) => {
+    setVisibleSeries(prev => ({
+      ...prev,
+      [series]: !prev[series]
+    }));
   };
 
   const toggleFullscreen = () => {
@@ -171,34 +186,37 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
       {
         type: 'bar' as const,
         label: 'Small Speculators',
-        data: chartData.map(d => d.smallSpecNet),
+        data: visibleSeries.smallSpeculators ? chartData.map(d => d.smallSpecNet) : [],
         backgroundColor: colors.smallSpeculators,
         borderWidth: 0,
         yAxisID: 'y',
         order: 2,
+        hidden: !visibleSeries.smallSpeculators,
       },
       {
         type: 'bar' as const,
         label: 'Large Speculators',
-        data: chartData.map(d => d.largeSpecNet),
+        data: visibleSeries.largeSpeculators ? chartData.map(d => d.largeSpecNet) : [],
         backgroundColor: colors.largeSpeculators,
         borderWidth: 0,
         yAxisID: 'y',
         order: 2,
+        hidden: !visibleSeries.largeSpeculators,
       },
       {
         type: 'bar' as const,
         label: 'Commercials',
-        data: chartData.map(d => d.commercialNet),
+        data: visibleSeries.commercials ? chartData.map(d => d.commercialNet) : [],
         backgroundColor: colors.commercials,
         borderWidth: 0,
         yAxisID: 'y',
         order: 2,
+        hidden: !visibleSeries.commercials,
       },
       {
         type: 'line' as const,
         label: 'Open Interest',
-        data: chartData.map(d => d.openInterest),
+        data: visibleSeries.openInterest ? chartData.map(d => d.openInterest) : [],
         borderColor: 'rgba(16, 185, 129, 0.7)', // 70% opacity green
         backgroundColor: 'transparent',
         borderWidth: 2.5,
@@ -208,6 +226,7 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
         fill: false,
         tension: 0.4,
         order: 1,
+        hidden: !visibleSeries.openInterest,
       },
     ],
   };
@@ -249,39 +268,48 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
       x: {
         grid: {
           display: true,
-          color: darkMode ? 'rgba(55, 65, 81, 0.5)' : 'rgba(229, 231, 235, 0.5)',
+          color: darkMode ? 'rgba(55, 65, 81, 0.3)' : 'rgba(229, 231, 235, 0.4)',
         },
         ticks: {
           color: darkMode ? '#9ca3af' : '#6b7280',
           font: {
-            size: 10,
+            size: window.innerWidth < 640 ? 8 : 10,
             weight: 500,
           },
           maxRotation: 45,
           minRotation: 45,
+          maxTicksLimit: window.innerWidth < 640 ? 8 : undefined,
+          autoSkip: true,
+          autoSkipPadding: window.innerWidth < 640 ? 5 : 10,
         },
       },
       y: {
         type: 'linear',
         position: 'left',
         title: {
-          display: true,
+          display: window.innerWidth >= 640,
           text: 'Net Contracts',
           color: darkMode ? '#9ca3af' : '#6b7280',
           font: {
-            size: 12,
+            size: 11,
             weight: 600,
           },
         },
         grid: {
-          color: darkMode ? 'rgba(55, 65, 81, 0.5)' : 'rgba(229, 231, 235, 0.5)',
+          color: darkMode ? 'rgba(55, 65, 81, 0.3)' : 'rgba(229, 231, 235, 0.4)',
         },
         ticks: {
           color: darkMode ? '#9ca3af' : '#6b7280',
           font: {
+            size: window.innerWidth < 640 ? 9 : 11,
             weight: 500,
           },
+          maxTicksLimit: window.innerWidth < 640 ? 5 : 7,
           callback: function(value: any) {
+            const absValue = Math.abs(value);
+            if (absValue >= 1000000) {
+              return (value / 1000000).toFixed(1) + 'M';
+            }
             return (value / 1000).toFixed(0) + 'K';
           }
         },
@@ -289,12 +317,13 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
       y1: {
         type: 'linear',
         position: 'right',
+        display: visibleSeries.openInterest,
         title: {
-          display: true,
+          display: window.innerWidth >= 640 && visibleSeries.openInterest,
           text: 'Open Interest',
           color: colors.openInterest,
           font: {
-            size: 12,
+            size: 11,
             weight: 600,
           },
         },
@@ -304,9 +333,15 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
         ticks: {
           color: colors.openInterest,
           font: {
+            size: window.innerWidth < 640 ? 9 : 11,
             weight: 500,
           },
+          maxTicksLimit: window.innerWidth < 640 ? 5 : 7,
           callback: function(value: any) {
+            const absValue = Math.abs(value);
+            if (absValue >= 1000000) {
+              return (value / 1000000).toFixed(1) + 'M';
+            }
             return (value / 1000).toFixed(0) + 'K';
           }
         },
@@ -368,24 +403,52 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
           ))}
         </div>
 
-        {/* Mobile legend - compact grid */}
+        {/* Mobile legend - compact grid - clickable */}
         <div className="grid grid-cols-2 gap-2 mt-3 text-[10px] font-semibold">
-          <div className="flex items-center gap-1.5">
+          <button
+            onClick={() => toggleSeries('smallSpeculators')}
+            className={`flex items-center gap-1.5 p-2 rounded-lg active:scale-95 transition-all ${
+              visibleSeries.smallSpeculators
+                ? 'bg-gray-50 dark:bg-gray-800'
+                : 'bg-gray-100 dark:bg-gray-700 opacity-40'
+            }`}
+          >
             <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: colors.smallSpeculators }}></div>
             <span className="text-gray-600 dark:text-gray-400 truncate">Small Specs</span>
-          </div>
-          <div className="flex items-center gap-1.5">
+          </button>
+          <button
+            onClick={() => toggleSeries('largeSpeculators')}
+            className={`flex items-center gap-1.5 p-2 rounded-lg active:scale-95 transition-all ${
+              visibleSeries.largeSpeculators
+                ? 'bg-gray-50 dark:bg-gray-800'
+                : 'bg-gray-100 dark:bg-gray-700 opacity-40'
+            }`}
+          >
             <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: colors.largeSpeculators }}></div>
             <span className="text-gray-600 dark:text-gray-400 truncate">Large Specs</span>
-          </div>
-          <div className="flex items-center gap-1.5">
+          </button>
+          <button
+            onClick={() => toggleSeries('commercials')}
+            className={`flex items-center gap-1.5 p-2 rounded-lg active:scale-95 transition-all ${
+              visibleSeries.commercials
+                ? 'bg-gray-50 dark:bg-gray-800'
+                : 'bg-gray-100 dark:bg-gray-700 opacity-40'
+            }`}
+          >
             <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: colors.commercials }}></div>
             <span className="text-gray-600 dark:text-gray-400 truncate">Commercials</span>
-          </div>
-          <div className="flex items-center gap-1.5">
+          </button>
+          <button
+            onClick={() => toggleSeries('openInterest')}
+            className={`flex items-center gap-1.5 p-2 rounded-lg active:scale-95 transition-all ${
+              visibleSeries.openInterest
+                ? 'bg-gray-50 dark:bg-gray-800'
+                : 'bg-gray-100 dark:bg-gray-700 opacity-40'
+            }`}
+          >
             <div className="w-4 h-0.5 flex-shrink-0" style={{ backgroundColor: colors.openInterest }}></div>
             <span className="text-gray-600 dark:text-gray-400 truncate">Open Interest</span>
-          </div>
+          </button>
         </div>
       </div>
 
@@ -439,24 +502,52 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
         </div>
       </div>
 
-      {/* Desktop Legend */}
-      <div className="hidden sm:flex flex-wrap items-center gap-4 text-xs font-medium mb-4">
-        <div className="flex items-center gap-2">
+      {/* Desktop Legend - clickable */}
+      <div className="hidden sm:flex flex-wrap items-center gap-3 text-xs font-medium mb-4">
+        <button
+          onClick={() => toggleSeries('smallSpeculators')}
+          className={`flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-all ${
+            visibleSeries.smallSpeculators
+              ? 'bg-gray-50 dark:bg-gray-800'
+              : 'bg-gray-100 dark:bg-gray-700 opacity-40'
+          }`}
+        >
           <div className="w-3 h-3 rounded-full" style={{ backgroundColor: colors.smallSpeculators }}></div>
           <span className="text-gray-600 dark:text-gray-400">Small Specs</span>
-        </div>
-        <div className="flex items-center gap-2">
+        </button>
+        <button
+          onClick={() => toggleSeries('largeSpeculators')}
+          className={`flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-all ${
+            visibleSeries.largeSpeculators
+              ? 'bg-gray-50 dark:bg-gray-800'
+              : 'bg-gray-100 dark:bg-gray-700 opacity-40'
+          }`}
+        >
           <div className="w-3 h-3 rounded-full" style={{ backgroundColor: colors.largeSpeculators }}></div>
           <span className="text-gray-600 dark:text-gray-400">Large Specs</span>
-        </div>
-        <div className="flex items-center gap-2">
+        </button>
+        <button
+          onClick={() => toggleSeries('commercials')}
+          className={`flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-all ${
+            visibleSeries.commercials
+              ? 'bg-gray-50 dark:bg-gray-800'
+              : 'bg-gray-100 dark:bg-gray-700 opacity-40'
+          }`}
+        >
           <div className="w-3 h-3 rounded-full" style={{ backgroundColor: colors.commercials }}></div>
           <span className="text-gray-600 dark:text-gray-400">Commercials</span>
-        </div>
-        <div className="flex items-center gap-2">
+        </button>
+        <button
+          onClick={() => toggleSeries('openInterest')}
+          className={`flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-all ${
+            visibleSeries.openInterest
+              ? 'bg-gray-50 dark:bg-gray-800'
+              : 'bg-gray-100 dark:bg-gray-700 opacity-40'
+          }`}
+        >
           <div className="w-8 h-0.5" style={{ backgroundColor: colors.openInterest }}></div>
           <span className="text-gray-600 dark:text-gray-400">Open Interest</span>
-        </div>
+        </button>
       </div>
 
       {/* Custom Date Picker */}
