@@ -10,27 +10,6 @@ export const apiClient = axios.create({
   },
 });
 
-// Request interceptor - add password to all requests
-apiClient.interceptors.request.use(
-  (config) => {
-    // Get password from global variable set by App.tsx
-    const password = (window as any).__APP_PASSWORD__ || localStorage.getItem('app_password');
-
-    if (password) {
-      // Add password as query parameter
-      config.params = {
-        ...config.params,
-        password
-      };
-    }
-
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
-
 // Response interceptor
 apiClient.interceptors.response.use(
   (response) => {

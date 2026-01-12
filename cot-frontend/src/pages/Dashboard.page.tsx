@@ -17,8 +17,7 @@ export const DashboardPage: React.FC = () => {
     setIsUpdating(true);
     try {
       const apiUrl = import.meta.env.VITE_API_URL || '';
-      const password = (window as any).__APP_PASSWORD__ || '';
-      const response = await fetch(`${apiUrl}/api/v1/cot/update${password ? `?password=${password}` : ''}`, {
+      const response = await fetch(`${apiUrl}/api/v1/cot/update`, {
         method: 'POST',
       });
 
@@ -66,7 +65,9 @@ export const DashboardPage: React.FC = () => {
       <div className="max-w-[1600px] mx-auto px-6 py-10">
         <div className="mb-8 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <img src="/images/eccuity-logo.svg" alt="Eccuity" className="h-12 w-12" />
+            <a href="https://eccuity.com" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity">
+              <img src="/images/eccuity-logo.svg" alt="Eccuity" className="h-12 w-12" />
+            </a>
             <div>
               <h1 className="text-4xl font-bold mb-2 text-eccuity-dark-300">
                 Commitment of Traders
