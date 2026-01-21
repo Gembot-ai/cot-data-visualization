@@ -109,7 +109,12 @@ export const AdminPage: React.FC = () => {
       const response = await makeAuthRequest('/api/v1/admin/validate', { method: 'POST' });
 
       if (response.status === 401) {
-        setMessage({ type: 'error', text: 'Invalid admin key' });
+        setMessage({ type: 'error', text: 'Invalid admin key. Check that ADMIN_KEY is set in Railway env vars.' });
+        return;
+      }
+
+      if (response.status === 403) {
+        setMessage({ type: 'error', text: 'Admin endpoints not configured. Set ADMIN_KEY in Railway env vars.' });
         return;
       }
 
@@ -123,10 +128,11 @@ export const AdminPage: React.FC = () => {
             : `Validation found ${data.summary.errors} errors in ${data.errors.length} markets.`
         });
       } else {
-        setMessage({ type: 'error', text: 'Validation failed' });
+        const errorData = await response.json().catch(() => ({}));
+        setMessage({ type: 'error', text: `Validation failed: ${errorData.message || errorData.error || response.statusText}` });
       }
     } catch (error) {
-      setMessage({ type: 'error', text: 'Error running validation' });
+      setMessage({ type: 'error', text: `Error running validation: ${error instanceof Error ? error.message : 'Network error'}` });
     } finally {
       setLoading(null);
     }
@@ -140,7 +146,12 @@ export const AdminPage: React.FC = () => {
       const response = await makeAuthRequest('/api/v1/admin/update', { method: 'POST' });
 
       if (response.status === 401) {
-        setMessage({ type: 'error', text: 'Invalid admin key' });
+        setMessage({ type: 'error', text: 'Invalid admin key. Check that ADMIN_KEY is set in Railway env vars.' });
+        return;
+      }
+
+      if (response.status === 403) {
+        setMessage({ type: 'error', text: 'Admin endpoints not configured. Set ADMIN_KEY in Railway env vars.' });
         return;
       }
 
@@ -149,10 +160,11 @@ export const AdminPage: React.FC = () => {
         // Refresh status after a delay
         setTimeout(fetchStatus, 5000);
       } else {
-        setMessage({ type: 'error', text: 'Failed to start update' });
+        const errorData = await response.json().catch(() => ({}));
+        setMessage({ type: 'error', text: `Failed to start update: ${errorData.message || errorData.error || response.statusText}` });
       }
     } catch (error) {
-      setMessage({ type: 'error', text: 'Error triggering update' });
+      setMessage({ type: 'error', text: `Error triggering update: ${error instanceof Error ? error.message : 'Network error'}` });
     } finally {
       setLoading(null);
     }
@@ -170,17 +182,24 @@ export const AdminPage: React.FC = () => {
       const response = await makeAuthRequest('/api/v1/admin/refetch?background=true', { method: 'POST' });
 
       if (response.status === 401) {
-        setMessage({ type: 'error', text: 'Invalid admin key' });
+        setMessage({ type: 'error', text: 'Invalid admin key. Check that ADMIN_KEY is set in Railway env vars.' });
+        return;
+      }
+
+      if (response.status === 403) {
+        setMessage({ type: 'error', text: 'Admin endpoints not configured. Set ADMIN_KEY in Railway env vars.' });
         return;
       }
 
       if (response.ok) {
-        setMessage({ type: 'success', text: 'Refetch started in background. Check status periodically to monitor progress.' });
+        const data = await response.json();
+        setMessage({ type: 'success', text: `Refetch started in background. ${data.message || 'Check status periodically.'}` });
       } else {
-        setMessage({ type: 'error', text: 'Failed to start refetch' });
+        const errorData = await response.json().catch(() => ({}));
+        setMessage({ type: 'error', text: `Failed to start refetch: ${errorData.message || errorData.error || response.statusText}` });
       }
     } catch (error) {
-      setMessage({ type: 'error', text: 'Error triggering refetch' });
+      setMessage({ type: 'error', text: `Error triggering refetch: ${error instanceof Error ? error.message : 'Network error'}` });
     } finally {
       setLoading(null);
     }
