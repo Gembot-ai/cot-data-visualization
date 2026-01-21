@@ -149,10 +149,11 @@ export class AdminController {
 
   /**
    * Refetch all data (clears and re-fetches)
+   * Fetches last 2 years of data by default for reasonable performance
    */
-  async refetchAll() {
+  async refetchAll(yearsToFetch: number = 2) {
     try {
-      logger.info('Starting complete data refetch...');
+      logger.info({ yearsToFetch }, 'Starting complete data refetch...');
 
       // Get current count
       const beforeCount = await pool.query(`SELECT COUNT(*) as count FROM cot_reports`);
@@ -164,8 +165,104 @@ export class AdminController {
 
       logger.info({ deleted: deleteResult.rowCount }, 'Cleared existing data');
 
-      // Fetch fresh data
-      await fetchAllCotData();
+      // Fetch fresh data with controlled date range (not from 2000!)
+      const startDate = new Date();
+      startDate.setFullYear(startDate.getFullYear() - yearsToFetch);
+      const startDateStr = startDate.toISOString().split('T')[0];
+
+      logger.info({ startDate: startDateStr }, 'Fetching data from CFTC...');
+
+      // Get all markets
+      const marketsResult = await pool.query(`SELECT id, symbol FROM markets WHERE active = true`);
+      const markets = marketsResult.rows;
+
+      // Build CFTC code map
+      const cftcCodeToMarket = new Map<string, { id: number; symbol: string }>();
+      for (const market of markets) {
+        const cftcCode = CFTC_CONTRACT_CODES[market.symbol];
+        if (cftcCode) {
+          cftcCodeToMarket.set(cftcCode, { id: market.id, symbol: market.symbol });
+        }
+      }
+
+      let totalSaved = 0;
+      let offset = 0;
+      const limit = 1000;
+      let hasMore = true;
+
+      while (hasMore) {
+        logger.info({ offset, totalSaved }, 'Fetching batch from CFTC...');
+
+        const response = await axios.get(CFTC_API_BASE, {
+          params: {
+            '$limit': limit,
+            '$offset': offset,
+            '$order': 'report_date_as_yyyy_mm_dd DESC',
+            '$where': `report_date_as_yyyy_mm_dd >= '${startDateStr}'`
+          },
+          timeout: 60000
+        });
+
+        const records = response.data;
+        if (!records || records.length === 0) {
+          hasMore = false;
+          break;
+        }
+
+        // Process records
+        for (const record of records) {
+          const marketMatch = cftcCodeToMarket.get(record.cftc_contract_market_code);
+          if (!marketMatch) continue;
+
+          const reportDate = new Date(record.report_date_as_yyyy_mm_dd);
+          const publishDate = new Date(reportDate);
+          publishDate.setDate(publishDate.getDate() + 3);
+
+          await pool.query(
+            `INSERT INTO cot_reports (
+              market_id, report_date, publish_date,
+              commercial_long, commercial_short,
+              non_commercial_long, non_commercial_short,
+              non_reportable_long, non_reportable_short,
+              open_interest, source
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+            ON CONFLICT (market_id, report_date) DO UPDATE SET
+              commercial_long = EXCLUDED.commercial_long,
+              commercial_short = EXCLUDED.commercial_short,
+              non_commercial_long = EXCLUDED.non_commercial_long,
+              non_commercial_short = EXCLUDED.non_commercial_short,
+              non_reportable_long = EXCLUDED.non_reportable_long,
+              non_reportable_short = EXCLUDED.non_reportable_short,
+              open_interest = EXCLUDED.open_interest,
+              updated_at = CURRENT_TIMESTAMP`,
+            [
+              marketMatch.id,
+              reportDate,
+              publishDate,
+              parseInt(record.comm_positions_long_all || '0'),
+              parseInt(record.comm_positions_short_all || '0'),
+              parseInt(record.noncomm_positions_long_all || '0'),
+              parseInt(record.noncomm_positions_short_all || '0'),
+              parseInt(record.nonrept_positions_long_all || '0'),
+              parseInt(record.nonrept_positions_short_all || '0'),
+              parseInt(record.open_interest_all || '0'),
+              'CFTC_API'
+            ]
+          );
+          totalSaved++;
+        }
+
+        logger.info({ totalSaved, batchSize: records.length }, 'Batch processed');
+
+        if (records.length < limit) {
+          hasMore = false;
+        } else {
+          offset += limit;
+        }
+
+        // Rate limiting
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
 
       // Get new count
       const afterCount = await pool.query(`SELECT COUNT(*) as count FROM cot_reports WHERE source = 'CFTC_API'`);
@@ -182,11 +279,14 @@ export class AdminController {
         ORDER BY m.symbol
       `);
 
+      logger.info({ totalSaved, markets: summary.rows.length }, 'Refetch completed');
+
       return {
         success: true,
         beforeCount: parseInt(beforeCount.rows[0].count),
         afterCount: parseInt(afterCount.rows[0].count),
         deleted: deleteResult.rowCount,
+        totalFetched: totalSaved,
         markets: summary.rows
       };
 

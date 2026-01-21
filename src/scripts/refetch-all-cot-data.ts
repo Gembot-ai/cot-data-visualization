@@ -77,9 +77,8 @@ async function refetchAllCotData() {
   } catch (error) {
     logger.error({ error }, 'Refetch failed');
     throw error;
-  } finally {
-    await pool.end();
   }
+  // NOTE: Don't close pool here - it's shared with the server when called via API
 }
 
 // Run if called directly
@@ -90,6 +89,9 @@ if (require.main === module) {
     })
     .catch(() => {
       process.exit(1);
+    })
+    .finally(() => {
+      pool.end(); // Only close pool when running as standalone script
     });
 }
 
