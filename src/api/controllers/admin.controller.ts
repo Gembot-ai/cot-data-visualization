@@ -149,9 +149,9 @@ export class AdminController {
 
   /**
    * Refetch all data (clears and re-fetches)
-   * Fetches last 2 years of data by default for reasonable performance
+   * Fetches last 10 years of data for comprehensive historical coverage
    */
-  async refetchAll(yearsToFetch: number = 2) {
+  async refetchAll(yearsToFetch: number = 10) {
     try {
       logger.info({ yearsToFetch }, 'Starting complete data refetch...');
 
@@ -165,12 +165,12 @@ export class AdminController {
 
       logger.info({ deleted: deleteResult.rowCount }, 'Cleared existing data');
 
-      // Fetch fresh data with controlled date range (not from 2000!)
+      // Fetch fresh data - 10 years gives good historical context
       const startDate = new Date();
       startDate.setFullYear(startDate.getFullYear() - yearsToFetch);
       const startDateStr = startDate.toISOString().split('T')[0];
 
-      logger.info({ startDate: startDateStr }, 'Fetching data from CFTC...');
+      logger.info({ startDate: startDateStr, yearsToFetch }, 'Fetching data from CFTC...');
 
       // Get all markets
       const marketsResult = await pool.query(`SELECT id, symbol FROM markets WHERE active = true`);
@@ -187,11 +187,13 @@ export class AdminController {
 
       let totalSaved = 0;
       let offset = 0;
-      const limit = 1000;
+      const limit = 5000; // Larger batches for efficiency
       let hasMore = true;
+      let batchNum = 0;
 
       while (hasMore) {
-        logger.info({ offset, totalSaved }, 'Fetching batch from CFTC...');
+        batchNum++;
+        logger.info({ batch: batchNum, offset, totalSaved }, 'Fetching batch from CFTC...');
 
         const response = await axios.get(CFTC_API_BASE, {
           params: {
@@ -200,7 +202,7 @@ export class AdminController {
             '$order': 'report_date_as_yyyy_mm_dd DESC',
             '$where': `report_date_as_yyyy_mm_dd >= '${startDateStr}'`
           },
-          timeout: 60000
+          timeout: 120000 // 2 minute timeout for larger batches
         });
 
         const records = response.data;
@@ -209,7 +211,8 @@ export class AdminController {
           break;
         }
 
-        // Process records
+        // Batch insert for much better performance
+        const inserts: any[][] = [];
         for (const record of records) {
           const marketMatch = cftcCodeToMarket.get(record.cftc_contract_market_code);
           if (!marketMatch) continue;
@@ -218,38 +221,55 @@ export class AdminController {
           const publishDate = new Date(reportDate);
           publishDate.setDate(publishDate.getDate() + 3);
 
-          await pool.query(
-            `INSERT INTO cot_reports (
-              market_id, report_date, publish_date,
-              commercial_long, commercial_short,
-              non_commercial_long, non_commercial_short,
-              non_reportable_long, non_reportable_short,
-              open_interest, source
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-            ON CONFLICT (market_id, report_date) DO UPDATE SET
-              commercial_long = EXCLUDED.commercial_long,
-              commercial_short = EXCLUDED.commercial_short,
-              non_commercial_long = EXCLUDED.non_commercial_long,
-              non_commercial_short = EXCLUDED.non_commercial_short,
-              non_reportable_long = EXCLUDED.non_reportable_long,
-              non_reportable_short = EXCLUDED.non_reportable_short,
-              open_interest = EXCLUDED.open_interest,
-              updated_at = CURRENT_TIMESTAMP`,
-            [
-              marketMatch.id,
-              reportDate,
-              publishDate,
-              parseInt(record.comm_positions_long_all || '0'),
-              parseInt(record.comm_positions_short_all || '0'),
-              parseInt(record.noncomm_positions_long_all || '0'),
-              parseInt(record.noncomm_positions_short_all || '0'),
-              parseInt(record.nonrept_positions_long_all || '0'),
-              parseInt(record.nonrept_positions_short_all || '0'),
-              parseInt(record.open_interest_all || '0'),
-              'CFTC_API'
-            ]
-          );
-          totalSaved++;
+          inserts.push([
+            marketMatch.id,
+            reportDate,
+            publishDate,
+            parseInt(record.comm_positions_long_all || '0'),
+            parseInt(record.comm_positions_short_all || '0'),
+            parseInt(record.noncomm_positions_long_all || '0'),
+            parseInt(record.noncomm_positions_short_all || '0'),
+            parseInt(record.nonrept_positions_long_all || '0'),
+            parseInt(record.nonrept_positions_short_all || '0'),
+            parseInt(record.open_interest_all || '0'),
+            'CFTC_API'
+          ]);
+        }
+
+        // Batch insert using a transaction
+        if (inserts.length > 0) {
+          const client = await pool.connect();
+          try {
+            await client.query('BEGIN');
+            for (const values of inserts) {
+              await client.query(
+                `INSERT INTO cot_reports (
+                  market_id, report_date, publish_date,
+                  commercial_long, commercial_short,
+                  non_commercial_long, non_commercial_short,
+                  non_reportable_long, non_reportable_short,
+                  open_interest, source
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+                ON CONFLICT (market_id, report_date) DO UPDATE SET
+                  commercial_long = EXCLUDED.commercial_long,
+                  commercial_short = EXCLUDED.commercial_short,
+                  non_commercial_long = EXCLUDED.non_commercial_long,
+                  non_commercial_short = EXCLUDED.non_commercial_short,
+                  non_reportable_long = EXCLUDED.non_reportable_long,
+                  non_reportable_short = EXCLUDED.non_reportable_short,
+                  open_interest = EXCLUDED.open_interest,
+                  updated_at = CURRENT_TIMESTAMP`,
+                values
+              );
+            }
+            await client.query('COMMIT');
+            totalSaved += inserts.length;
+          } catch (err) {
+            await client.query('ROLLBACK');
+            throw err;
+          } finally {
+            client.release();
+          }
         }
 
         logger.info({ totalSaved, batchSize: records.length }, 'Batch processed');
