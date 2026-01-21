@@ -5,6 +5,7 @@ import path from 'path';
 import { env } from './config/env';
 import { cotRoutes } from './api/routes/cot.routes';
 import { marketsRoutes } from './api/routes/markets.routes';
+import { adminRoutes } from './api/routes/admin.routes';
 import { errorHandler } from './api/middlewares/error-handler';
 import { logger } from './utils/logger';
 
@@ -28,6 +29,7 @@ export async function buildApp() {
   // API Routes
   await fastify.register(cotRoutes, { prefix: '/api/v1' });
   await fastify.register(marketsRoutes, { prefix: '/api/v1' });
+  await fastify.register(adminRoutes, { prefix: '/api/v1' });
 
   // Error handling
   fastify.setErrorHandler(errorHandler);

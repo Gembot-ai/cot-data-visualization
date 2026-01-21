@@ -27,4 +27,7 @@ export const env = {
 
   // App Password Protection (optional - leave empty to disable)
   APP_PASSWORD: process.env.APP_PASSWORD || '',
+
+  // Admin API key for data management endpoints
+  ADMIN_KEY: process.env.ADMIN_KEY || '',
 };

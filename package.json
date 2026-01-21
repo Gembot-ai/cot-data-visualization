@@ -13,6 +13,8 @@
     "init-db": "tsx src/scripts/init-db.ts",
     "fetch-data": "tsx src/scripts/fetch-cot-data.ts",
     "fetch-all": "tsx src/scripts/fetch-all-cot-data.ts",
+    "refetch-all": "tsx src/scripts/refetch-all-cot-data.ts",
+    "validate-data": "tsx src/scripts/validate-cot-data.ts",
     "weekly-update": "tsx src/scripts/weekly-update.ts",
     "seed-sample": "tsx src/scripts/seed-sample-data.ts"
   },

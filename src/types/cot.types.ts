@@ -7,6 +7,7 @@ export interface Market {
   description?: string;
   contract_unit?: string;
   tick_size?: number;
+  cftc_code?: string;  // Official CFTC contract market code for reliable matching
   active: boolean;
   created_at: Date;
   updated_at: Date;

@@ -30,6 +30,13 @@ BEGIN
   ) THEN
     ALTER TABLE markets ADD COLUMN tick_size VARCHAR(100);
   END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'markets' AND column_name = 'cftc_code'
+  ) THEN
+    ALTER TABLE markets ADD COLUMN cftc_code VARCHAR(20);
+  END IF;
 END$$;
 
 CREATE INDEX IF NOT EXISTS idx_markets_symbol ON markets(symbol);

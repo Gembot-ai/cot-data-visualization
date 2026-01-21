@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useCotData, useCotHistory } from '../hooks/useCotData';
 import { StackedBarChart } from '../components/charts/StackedBarChart';
 import { MetricsPanel } from '../components/dashboard/MetricsPanel';
@@ -7,31 +8,10 @@ import { MarketSelector } from '../components/dashboard/MarketSelector';
 export const DashboardPage: React.FC = () => {
   const [selectedMarkets, setSelectedMarkets] = useState<string[]>(['GC']);
   const [darkMode] = useState(false);
-  const [isUpdating, setIsUpdating] = useState(false);
 
   const selectedMarket = selectedMarkets[0] || 'GC';
   const latestQuery = useCotData(selectedMarket);
   const historyQuery = useCotHistory(selectedMarket);
-
-  const handleUpdateData = async () => {
-    setIsUpdating(true);
-    try {
-      const apiUrl = import.meta.env.VITE_API_URL || '';
-      const response = await fetch(`${apiUrl}/api/v1/cot/update`, {
-        method: 'POST',
-      });
-
-      if (response.ok) {
-        alert('Data update started! This will take 5-10 minutes. Refresh the page to see new data.');
-      } else {
-        alert('Failed to trigger update');
-      }
-    } catch (error) {
-      alert('Error triggering update');
-    } finally {
-      setIsUpdating(false);
-    }
-  };
 
   if (latestQuery.isLoading || historyQuery.isLoading) {
     return (
@@ -104,18 +84,17 @@ export const DashboardPage: React.FC = () => {
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <button
-              onClick={handleUpdateData}
-              disabled={isUpdating}
-              className="glass-strong px-6 py-3 rounded-2xl shadow-glass hover:shadow-lg hover:border-eccuity-coral/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            <Link
+              to="/admin"
+              className="glass-strong px-4 py-3 rounded-2xl shadow-glass hover:shadow-lg hover:border-eccuity-coral/30 transition-all"
             >
               <div className="text-xs font-semibold text-eccuity-light-400 uppercase tracking-wider mb-1">
-                {isUpdating ? 'Updating...' : 'Update Data'}
+                Admin
               </div>
               <div className="text-sm font-bold text-eccuity-dark-300">
-                {isUpdating ? '⏳ Please wait' : '🔄 Refresh Now'}
+                Settings
               </div>
-            </button>
+            </Link>
             <div className="glass-strong px-6 py-3 rounded-2xl shadow-glass border-eccuity-coral/20">
               <div className="text-xs font-semibold text-eccuity-light-400 uppercase tracking-wider mb-1">Last Updated</div>
               <div className="text-lg font-bold text-eccuity-dark-300">

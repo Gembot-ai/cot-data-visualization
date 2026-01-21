@@ -3,12 +3,14 @@ import { pool } from '../config/database';
 import { logger } from '../utils/logger';
 import { MarketsRepository } from '../database/repositories/markets.repo';
 import { CotReportsRepository } from '../database/repositories/cot-reports.repo';
-import { matchesCFTCMarketName } from '../utils/cftc-market-names';
+import { CFTC_CONTRACT_CODES } from '../config/cftc-contract-codes';
 
 /**
  * Fetch ALL available CoT data from CFTC API
  * This will fetch the maximum available historical data for all markets
  * Usage: npm run fetch-all
+ *
+ * IMPORTANT: Uses official CFTC contract codes for reliable market matching
  */
 
 // Using LEGACY Futures format - simpler and covers all our markets
@@ -60,12 +62,18 @@ async function fetchAllCotData() {
       logger.info('🚀 No existing data found, starting comprehensive fetch from 2000-01-01...');
     }
 
-    // Create market name to ID map
-    const marketMap = new Map<string, number>();
-    markets.forEach(m => {
-      marketMap.set(m.name.toUpperCase(), m.id);
-      marketMap.set(m.symbol.toUpperCase(), m.id);
-    });
+    // Create CFTC contract code to market ID map for reliable matching
+    const cftcCodeToMarketId = new Map<string, { id: number; symbol: string }>();
+    for (const market of markets) {
+      const cftcCode = CFTC_CONTRACT_CODES[market.symbol];
+      if (cftcCode) {
+        cftcCodeToMarketId.set(cftcCode, { id: market.id, symbol: market.symbol });
+        logger.debug({ symbol: market.symbol, cftcCode }, 'Mapped market to CFTC code');
+      } else {
+        logger.warn({ symbol: market.symbol }, 'No CFTC code found for market - will be skipped');
+      }
+    }
+    logger.info({ mappedMarkets: cftcCodeToMarketId.size }, 'Markets mapped to CFTC codes');
 
     let totalFetched = 0;
     let totalSaved = 0;
@@ -107,24 +115,17 @@ async function fetchAllCotData() {
         // Process and save records
         for (const record of records) {
           try {
-            // Try to match market using proper CFTC name mapping
-            const cftcMarketName = record.market_and_exchange_names || '';
-            let marketId: number | undefined;
-            let matchedSymbol: string | undefined;
+            // Match market using official CFTC contract code (reliable matching)
+            const cftcCode = record.cftc_contract_market_code;
+            const marketMatch = cftcCodeToMarketId.get(cftcCode);
 
-            // Try matching using CFTC market name patterns
-            for (const market of markets) {
-              if (matchesCFTCMarketName(cftcMarketName, market.symbol)) {
-                marketId = market.id;
-                matchedSymbol = market.symbol;
-                break;
-              }
-            }
-
-            if (!marketId) {
+            if (!marketMatch) {
               // Skip markets we don't track
               continue;
             }
+
+            const marketId = marketMatch.id;
+            const matchedSymbol = marketMatch.symbol;
 
             // Parse report date
             const reportDate = new Date(record.report_date_as_yyyy_mm_dd);
@@ -140,7 +141,7 @@ async function fetchAllCotData() {
             const nonReportableShort = parseInt(record.nonrept_positions_short_all || '0');
             const openInterest = parseInt(record.open_interest_all || '0');
 
-            // Insert into database
+            // Insert or update in database (upsert to fix any incorrect data)
             await pool.query(
               `INSERT INTO cot_reports (
                 market_id, report_date, publish_date,
@@ -150,7 +151,15 @@ async function fetchAllCotData() {
                 open_interest,
                 source
               ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-              ON CONFLICT DO NOTHING`,
+              ON CONFLICT (market_id, report_date) DO UPDATE SET
+                commercial_long = EXCLUDED.commercial_long,
+                commercial_short = EXCLUDED.commercial_short,
+                non_commercial_long = EXCLUDED.non_commercial_long,
+                non_commercial_short = EXCLUDED.non_commercial_short,
+                non_reportable_long = EXCLUDED.non_reportable_long,
+                non_reportable_short = EXCLUDED.non_reportable_short,
+                open_interest = EXCLUDED.open_interest,
+                updated_at = CURRENT_TIMESTAMP`,
               [
                 marketId,
                 reportDate,
