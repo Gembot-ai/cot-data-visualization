@@ -90,12 +90,20 @@ export const AdminPage: React.FC = () => {
   };
 
   const makeAuthRequest = async (endpoint: string, options: RequestInit = {}) => {
+    const headers: Record<string, string> = {
+      'x-admin-key': adminKey,
+    };
+
+    // Only set Content-Type if there's a body
+    if (options.body) {
+      headers['Content-Type'] = 'application/json';
+    }
+
     return fetch(`${apiUrl}${endpoint}`, {
       ...options,
       headers: {
         ...options.headers,
-        'x-admin-key': adminKey,
-        'Content-Type': 'application/json',
+        ...headers,
       },
     });
   };
