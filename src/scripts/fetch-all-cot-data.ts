@@ -158,8 +158,7 @@ async function fetchAllCotData() {
                 non_commercial_short = EXCLUDED.non_commercial_short,
                 non_reportable_long = EXCLUDED.non_reportable_long,
                 non_reportable_short = EXCLUDED.non_reportable_short,
-                open_interest = EXCLUDED.open_interest,
-                updated_at = CURRENT_TIMESTAMP`,
+                open_interest = EXCLUDED.open_interest`,
               [
                 marketId,
                 reportDate,

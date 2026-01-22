@@ -85,8 +85,7 @@ export class CotReportsRepository {
           commercial_short = EXCLUDED.commercial_short,
           non_commercial_long = EXCLUDED.non_commercial_long,
           non_commercial_short = EXCLUDED.non_commercial_short,
-          open_interest = EXCLUDED.open_interest,
-          updated_at = CURRENT_TIMESTAMP
+          open_interest = EXCLUDED.open_interest
       RETURNING *`,
       [
         report.market_id,
@@ -144,8 +143,7 @@ export class CotReportsRepository {
               commercial_short = EXCLUDED.commercial_short,
               non_commercial_long = EXCLUDED.non_commercial_long,
               non_commercial_short = EXCLUDED.non_commercial_short,
-              open_interest = EXCLUDED.open_interest,
-              updated_at = CURRENT_TIMESTAMP`,
+              open_interest = EXCLUDED.open_interest`,
           [
             report.market_id,
             report.report_date,
