@@ -141,40 +141,39 @@ async function fetchAllCotData() {
             const nonReportableShort = parseInt(record.nonrept_positions_short_all || '0');
             const openInterest = parseInt(record.open_interest_all || '0');
 
-            // Insert or update in database (upsert to fix any incorrect data)
-            await pool.query(
-              `INSERT INTO cot_reports (
-                market_id, report_date, publish_date,
-                commercial_long, commercial_short,
-                non_commercial_long, non_commercial_short,
-                non_reportable_long, non_reportable_short,
-                open_interest,
-                source
-              ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-              ON CONFLICT (market_id, report_date) DO UPDATE SET
-                commercial_long = EXCLUDED.commercial_long,
-                commercial_short = EXCLUDED.commercial_short,
-                non_commercial_long = EXCLUDED.non_commercial_long,
-                non_commercial_short = EXCLUDED.non_commercial_short,
-                non_reportable_long = EXCLUDED.non_reportable_long,
-                non_reportable_short = EXCLUDED.non_reportable_short,
-                open_interest = EXCLUDED.open_interest`,
-              [
-                marketId,
-                reportDate,
-                publishDate,
-                commercialLong,
-                commercialShort,
-                nonCommercialLong,
-                nonCommercialShort,
-                nonReportableLong,
-                nonReportableShort,
-                openInterest,
-                'CFTC_API'
-              ]
+            // Check if record already exists, then insert if not
+            const existing = await pool.query(
+              `SELECT id FROM cot_reports WHERE market_id = $1 AND report_date = $2`,
+              [marketId, reportDate]
             );
 
-            totalSaved++;
+            if (existing.rows.length === 0) {
+              // Insert new record
+              await pool.query(
+                `INSERT INTO cot_reports (
+                  market_id, report_date, publish_date,
+                  commercial_long, commercial_short,
+                  non_commercial_long, non_commercial_short,
+                  non_reportable_long, non_reportable_short,
+                  open_interest,
+                  source
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+                [
+                  marketId,
+                  reportDate,
+                  publishDate,
+                  commercialLong,
+                  commercialShort,
+                  nonCommercialLong,
+                  nonCommercialShort,
+                  nonReportableLong,
+                  nonReportableShort,
+                  openInterest,
+                  'CFTC_API'
+                ]
+              );
+              totalSaved++;
+            }
           } catch (error: any) {
             // Log but continue processing
             logger.debug({ error: error.message }, 'Skipped record');

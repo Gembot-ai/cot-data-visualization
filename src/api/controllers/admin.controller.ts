@@ -240,6 +240,7 @@ export class AdminController {
           try {
             await client.query('BEGIN');
             for (const values of inserts) {
+              // Simple INSERT since we deleted all data first - no conflict possible
               await client.query(
                 `INSERT INTO cot_reports (
                   market_id, report_date, publish_date,
@@ -247,15 +248,7 @@ export class AdminController {
                   non_commercial_long, non_commercial_short,
                   non_reportable_long, non_reportable_short,
                   open_interest, source
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-                ON CONFLICT (market_id, report_date) DO UPDATE SET
-                  commercial_long = EXCLUDED.commercial_long,
-                  commercial_short = EXCLUDED.commercial_short,
-                  non_commercial_long = EXCLUDED.non_commercial_long,
-                  non_commercial_short = EXCLUDED.non_commercial_short,
-                  non_reportable_long = EXCLUDED.non_reportable_long,
-                  non_reportable_short = EXCLUDED.non_reportable_short,
-                  open_interest = EXCLUDED.open_interest`,
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
                 values
               );
             }

@@ -80,12 +80,6 @@ export class CotReportsRepository {
         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17,
         $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30
       )
-      ON CONFLICT (market_id, report_date) DO UPDATE
-      SET commercial_long = EXCLUDED.commercial_long,
-          commercial_short = EXCLUDED.commercial_short,
-          non_commercial_long = EXCLUDED.non_commercial_long,
-          non_commercial_short = EXCLUDED.non_commercial_short,
-          open_interest = EXCLUDED.open_interest
       RETURNING *`,
       [
         report.market_id,
@@ -137,13 +131,7 @@ export class CotReportsRepository {
             commercial_long, commercial_short,
             non_commercial_long, non_commercial_short,
             open_interest, source
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-          ON CONFLICT (market_id, report_date) DO UPDATE
-          SET commercial_long = EXCLUDED.commercial_long,
-              commercial_short = EXCLUDED.commercial_short,
-              non_commercial_long = EXCLUDED.non_commercial_long,
-              non_commercial_short = EXCLUDED.non_commercial_short,
-              open_interest = EXCLUDED.open_interest`,
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
           [
             report.market_id,
             report.report_date,
