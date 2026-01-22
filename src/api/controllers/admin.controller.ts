@@ -160,8 +160,6 @@ export class AdminController {
 
       // Delete all existing data
       const deleteResult = await pool.query(`DELETE FROM cot_reports WHERE source = 'CFTC_API'`);
-      await pool.query(`DELETE FROM cot_metrics`);
-      await pool.query(`DELETE FROM cot_trends`);
 
       logger.info({ deleted: deleteResult.rowCount }, 'Cleared existing data');
 
