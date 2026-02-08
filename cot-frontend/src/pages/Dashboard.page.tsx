@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useCotData, useCotHistory } from '../hooks/useCotData';
 import { StackedBarChart } from '../components/charts/StackedBarChart';
 import { MetricsPanel } from '../components/dashboard/MetricsPanel';
@@ -84,17 +83,6 @@ export const DashboardPage: React.FC = () => {
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <Link
-              to="/admin"
-              className="glass-strong px-4 py-3 rounded-2xl shadow-glass hover:shadow-lg hover:border-eccuity-coral/30 transition-all"
-            >
-              <div className="text-xs font-semibold text-eccuity-light-400 uppercase tracking-wider mb-1">
-                Admin
-              </div>
-              <div className="text-sm font-bold text-eccuity-dark-300">
-                Settings
-              </div>
-            </Link>
             <div className="glass-strong px-6 py-3 rounded-2xl shadow-glass border-eccuity-coral/20">
               <div className="text-xs font-semibold text-eccuity-light-400 uppercase tracking-wider mb-1">Last Updated</div>
               <div className="text-lg font-bold text-eccuity-dark-300">
