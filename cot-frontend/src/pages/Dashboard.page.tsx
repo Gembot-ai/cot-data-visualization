@@ -83,6 +83,14 @@ export const DashboardPage: React.FC = () => {
             </div>
           </div>
           <div className="flex items-center gap-4">
+            <a
+              href="https://app.eccuity.com/register"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-eccuity-coral hover:bg-eccuity-coral/90 text-white px-6 py-3 rounded-2xl shadow-lg hover:shadow-xl transition-all font-semibold"
+            >
+              Try Eccuity Free
+            </a>
             <div className="glass-strong px-6 py-3 rounded-2xl shadow-glass border-eccuity-coral/20">
               <div className="text-xs font-semibold text-eccuity-light-400 uppercase tracking-wider mb-1">Last Updated</div>
               <div className="text-lg font-bold text-eccuity-dark-300">
