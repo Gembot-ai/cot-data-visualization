@@ -55,5 +55,6 @@ export interface PricePoint {
 
 export interface PriceResponse {
   ticker: string;
+  name: string;
   prices: PricePoint[];
 }

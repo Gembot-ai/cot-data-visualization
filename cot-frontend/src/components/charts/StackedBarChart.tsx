@@ -33,6 +33,7 @@ interface StackedBarChartProps {
   data: CotData[];
   priceData?: PricePoint[];
   priceTicker?: string;
+  priceName?: string;
   darkMode?: boolean;
 }
 
@@ -42,6 +43,7 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
   data,
   priceData,
   priceTicker,
+  priceName,
   darkMode = false,
 }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -60,9 +62,12 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
     price: true,
   });
 
-  // e.g. "GLD.US" -> "Price (GLD)", or just "Price" if no ticker
-  const priceLabel = priceTicker
-    ? `Price (${priceTicker.split('.')[0]})`
+  // e.g. "GLD - SPDR Gold Shares" or just "Price" if no data yet
+  const tickerShort = priceTicker ? priceTicker.split('.')[0] : '';
+  const priceLabel = priceTicker && priceName
+    ? `${tickerShort} - ${priceName}`
+    : priceTicker
+    ? `Price (${tickerShort})`
     : 'Price';
 
   const colors = {

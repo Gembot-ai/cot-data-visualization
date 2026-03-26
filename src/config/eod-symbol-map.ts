@@ -1,71 +1,81 @@
 /**
  * Maps internal market symbols to EODHD (eodhistoricaldata.com) ticker symbols.
  *
- * Format: { internalSymbol: 'TICKER.EXCHANGE' }
- *
  * EODHD doesn't support raw futures tickers, so we use the best available
  * proxy for each asset: ETFs for commodities/bonds, forex pairs for
  * currencies, and crypto tickers directly.
  */
 
-export const EOD_SYMBOL_MAP: Record<string, string> = {
+interface EodMapping {
+  ticker: string;
+  name: string;
+}
+
+export const EOD_SYMBOL_MAP: Record<string, EodMapping> = {
   // Equities - index ETFs
-  ES: 'SPY.US',          // S&P 500 via SPDR ETF
-  NQ: 'QQQ.US',          // NASDAQ 100 via Invesco ETF
-  YM: 'DIA.US',          // Dow Jones via SPDR ETF
-  RTY: 'IWM.US',         // Russell 2000 via iShares ETF
+  ES:  { ticker: 'SPY.US',         name: 'SPDR S&P 500 ETF' },
+  NQ:  { ticker: 'QQQ.US',         name: 'Invesco QQQ NASDAQ 100 ETF' },
+  YM:  { ticker: 'DIA.US',         name: 'SPDR Dow Jones ETF' },
+  RTY: { ticker: 'IWM.US',         name: 'iShares Russell 2000 ETF' },
 
-  // Treasury Bonds & Notes - Treasury ETFs
-  ZB: 'TLT.US',          // 20+ Year Treasury Bond ETF
-  ZN: 'IEF.US',          // 7-10 Year Treasury Note ETF
-  ZF: 'IEI.US',          // 3-7 Year Treasury Note ETF
-  ZT: 'SHY.US',          // 1-3 Year Treasury Note ETF
+  // Treasury Bonds & Notes
+  ZB:  { ticker: 'TLT.US',         name: 'iShares 20+ Year Treasury Bond ETF' },
+  ZN:  { ticker: 'IEF.US',         name: 'iShares 7-10 Year Treasury ETF' },
+  ZF:  { ticker: 'IEI.US',         name: 'iShares 3-7 Year Treasury ETF' },
+  ZT:  { ticker: 'SHY.US',         name: 'iShares 1-3 Year Treasury ETF' },
 
-  // Energies - commodity ETFs
-  CL: 'USO.US',          // United States Oil Fund
-  NG: 'UNG.US',          // United States Natural Gas Fund
-  RB: 'UGA.US',          // United States Gasoline Fund
-  HO: 'USO.US',          // No direct heating oil ETF, use oil as proxy
+  // Energies
+  CL:  { ticker: 'USO.US',         name: 'United States Oil Fund' },
+  NG:  { ticker: 'UNG.US',         name: 'United States Natural Gas Fund' },
+  RB:  { ticker: 'UGA.US',         name: 'United States Gasoline Fund' },
+  HO:  { ticker: 'USO.US',         name: 'United States Oil Fund (proxy)' },
 
-  // Metals - commodity ETFs
-  GC: 'GLD.US',          // SPDR Gold Shares
-  SI: 'SLV.US',          // iShares Silver Trust
-  HG: 'CPER.US',         // United States Copper Index Fund
-  PL: 'PPLT.US',         // abrdn Physical Platinum Shares
+  // Metals
+  GC:  { ticker: 'GLD.US',         name: 'SPDR Gold Shares' },
+  SI:  { ticker: 'SLV.US',         name: 'iShares Silver Trust' },
+  HG:  { ticker: 'CPER.US',        name: 'United States Copper Index Fund' },
+  PL:  { ticker: 'PPLT.US',        name: 'abrdn Physical Platinum Shares' },
 
-  // Currencies - forex pairs
-  '6E': 'EURUSD.FOREX',  // Euro
-  '6J': 'JPYUSD.FOREX',  // Japanese Yen
-  '6B': 'GBPUSD.FOREX',  // British Pound
-  '6A': 'AUDUSD.FOREX',  // Australian Dollar
-  '6C': 'CADUSD.FOREX',  // Canadian Dollar
-  '6S': 'CHFUSD.FOREX',  // Swiss Franc
-  DX: 'UUP.US',          // Invesco DB US Dollar Index Bullish Fund
+  // Currencies
+  '6E': { ticker: 'EURUSD.FOREX',  name: 'EUR/USD Spot' },
+  '6J': { ticker: 'JPYUSD.FOREX',  name: 'JPY/USD Spot' },
+  '6B': { ticker: 'GBPUSD.FOREX',  name: 'GBP/USD Spot' },
+  '6A': { ticker: 'AUDUSD.FOREX',  name: 'AUD/USD Spot' },
+  '6C': { ticker: 'CADUSD.FOREX',  name: 'CAD/USD Spot' },
+  '6S': { ticker: 'CHFUSD.FOREX',  name: 'CHF/USD Spot' },
+  DX:  { ticker: 'UUP.US',         name: 'Invesco DB US Dollar Index Fund' },
 
-  // Agriculturals - commodity ETFs
-  ZC: 'CORN.US',         // Teucrium Corn Fund
-  ZS: 'SOYB.US',         // Teucrium Soybean Fund
-  ZW: 'WEAT.US',         // Teucrium Wheat Fund
-  ZL: 'SOYB.US',         // No direct soybean oil ETF, use soybeans as proxy
-  ZM: 'SOYB.US',         // No direct soybean meal ETF, use soybeans as proxy
-  KC: 'COFF.LSE',        // WisdomTree Coffee ETC
-  SB: 'CANE.US',         // Teucrium Sugar Fund
-  CT: 'COTN.LSE',        // WisdomTree Cotton ETC
-  CC: 'COCO.LSE',        // WisdomTree Cocoa ETC
+  // Agriculturals
+  ZC:  { ticker: 'CORN.US',        name: 'Teucrium Corn Fund' },
+  ZS:  { ticker: 'SOYB.US',        name: 'Teucrium Soybean Fund' },
+  ZW:  { ticker: 'WEAT.US',        name: 'Teucrium Wheat Fund' },
+  ZL:  { ticker: 'SOYB.US',        name: 'Teucrium Soybean Fund (proxy)' },
+  ZM:  { ticker: 'SOYB.US',        name: 'Teucrium Soybean Fund (proxy)' },
+  KC:  { ticker: 'COFF.LSE',       name: 'WisdomTree Coffee ETC' },
+  SB:  { ticker: 'CANE.US',        name: 'Teucrium Sugar Fund' },
+  CT:  { ticker: 'COTN.LSE',       name: 'WisdomTree Cotton ETC' },
+  CC:  { ticker: 'COCO.LSE',       name: 'WisdomTree Cocoa ETC' },
 
   // Livestock
-  LE: 'CATL.LSE',        // WisdomTree Live Cattle ETC
-  HE: 'CATL.LSE',        // No direct hogs ETF, use cattle as proxy
-  GF: 'CATL.LSE',        // No direct feeder cattle ETF, use cattle as proxy
+  LE:  { ticker: 'CATL.LSE',       name: 'WisdomTree Live Cattle ETC' },
+  HE:  { ticker: 'CATL.LSE',       name: 'WisdomTree Live Cattle ETC (proxy)' },
+  GF:  { ticker: 'CATL.LSE',       name: 'WisdomTree Live Cattle ETC (proxy)' },
 
   // Crypto
-  BTC: 'BTC-USD.CC',     // Bitcoin
-  ETH: 'ETH-USD.CC',     // Ethereum
+  BTC: { ticker: 'BTC-USD.CC',     name: 'Bitcoin USD' },
+  ETH: { ticker: 'ETH-USD.CC',     name: 'Ethereum USD' },
 };
 
 /**
  * Get the EODHD ticker symbol for an internal market symbol
  */
 export function getEodTicker(symbol: string): string | undefined {
+  return EOD_SYMBOL_MAP[symbol]?.ticker;
+}
+
+/**
+ * Get the full mapping (ticker + name) for an internal market symbol
+ */
+export function getEodMapping(symbol: string): EodMapping | undefined {
   return EOD_SYMBOL_MAP[symbol];
 }

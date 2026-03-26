@@ -145,6 +145,7 @@ export const DashboardPage: React.FC = () => {
                 data={historyQuery.data.reports}
                 priceData={priceQuery.data?.prices}
                 priceTicker={priceQuery.data?.ticker}
+                priceName={priceQuery.data?.name}
                 darkMode={darkMode}
               />
             )}

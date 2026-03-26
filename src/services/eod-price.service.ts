@@ -1,4 +1,4 @@
-import { getEodTicker } from '../config/eod-symbol-map';
+import { getEodTicker, getEodMapping } from '../config/eod-symbol-map';
 import { logger } from '../utils/logger';
 
 export interface PricePoint {
@@ -28,11 +28,12 @@ export class EodPriceService {
     from?: string,
     to?: string,
     reportDates?: string[]
-  ): Promise<{ ticker: string; prices: PricePoint[] }> {
-    const ticker = getEodTicker(marketSymbol);
-    if (!ticker) {
+  ): Promise<{ ticker: string; name: string; prices: PricePoint[] }> {
+    const mapping = getEodMapping(marketSymbol);
+    if (!mapping) {
       throw new Error(`No EOD ticker mapping for symbol: ${marketSymbol}`);
     }
+    const { ticker, name } = mapping;
 
     if (!this.apiKey) {
       throw new Error('EOD_API_KEY not configured');
@@ -68,11 +69,12 @@ export class EodPriceService {
     // For each report date, find the closest trading day on or before
     if (reportDates && reportDates.length > 0) {
       const aligned = this.alignToReportDates(rawData, reportDates);
-      return { ticker, prices: aligned };
+      return { ticker, name, prices: aligned };
     }
 
     return {
       ticker,
+      name,
       prices: rawData.map(d => ({
         date: d.date,
         close: d.close,
