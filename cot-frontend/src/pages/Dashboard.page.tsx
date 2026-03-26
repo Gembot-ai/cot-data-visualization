@@ -144,6 +144,7 @@ export const DashboardPage: React.FC = () => {
               <StackedBarChart
                 data={historyQuery.data.reports}
                 priceData={priceQuery.data?.prices}
+                priceTicker={priceQuery.data?.ticker}
                 darkMode={darkMode}
               />
             )}

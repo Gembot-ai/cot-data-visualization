@@ -32,6 +32,7 @@ ChartJS.register(
 interface StackedBarChartProps {
   data: CotData[];
   priceData?: PricePoint[];
+  priceTicker?: string;
   darkMode?: boolean;
 }
 
@@ -40,6 +41,7 @@ type DateRange = '1M' | '3M' | '6M' | '1Y' | '2Y' | '5Y' | 'ALL' | 'CUSTOM';
 export const StackedBarChart: React.FC<StackedBarChartProps> = ({
   data,
   priceData,
+  priceTicker,
   darkMode = false,
 }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -57,6 +59,11 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
     commercials: true,
     price: true,
   });
+
+  // e.g. "GLD.US" -> "Price (GLD)", or just "Price" if no ticker
+  const priceLabel = priceTicker
+    ? `Price (${priceTicker.split('.')[0]})`
+    : 'Price';
 
   const colors = {
     smallSpeculators: '#fbbf24',
@@ -229,7 +236,7 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
       },
       {
         type: 'line' as const,
-        label: 'Price',
+        label: priceLabel,
         data: visibleSeries.price ? chartData.map(d => d.price) : [],
         borderColor: 'rgba(16, 185, 129, 0.7)',
         backgroundColor: 'transparent',
@@ -272,7 +279,7 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
               label += ': ';
             }
             if (context.parsed.y !== null) {
-              if (context.dataset.label === 'Price') {
+              if (context.dataset.label?.startsWith('Price')) {
                 label += context.parsed.y.toLocaleString(undefined, {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
@@ -342,7 +349,7 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
         display: visibleSeries.price,
         title: {
           display: window.innerWidth >= 640 && visibleSeries.price,
-          text: 'Price',
+          text: priceLabel,
           color: colors.price,
           font: {
             size: 11,
@@ -469,7 +476,7 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
             }`}
           >
             <div className="w-4 h-0.5 flex-shrink-0" style={{ backgroundColor: colors.price }}></div>
-            <span className="text-gray-600 dark:text-gray-400 truncate">Price</span>
+            <span className="text-gray-600 dark:text-gray-400 truncate">{priceLabel}</span>
           </button>
         </div>
       </div>
@@ -568,7 +575,7 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
           }`}
         >
           <div className="w-8 h-0.5" style={{ backgroundColor: colors.price }}></div>
-          <span className="text-gray-600 dark:text-gray-400">Price</span>
+          <span className="text-gray-600 dark:text-gray-400">{priceLabel}</span>
         </button>
       </div>
 
