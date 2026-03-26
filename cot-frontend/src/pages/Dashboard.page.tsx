@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useCotData, useCotHistory } from '../hooks/useCotData';
+import React, { useState, useMemo } from 'react';
+import { useCotData, useCotHistory, useAssetPrices } from '../hooks/useCotData';
 import { StackedBarChart } from '../components/charts/StackedBarChart';
 import { MetricsPanel } from '../components/dashboard/MetricsPanel';
 import { MarketSelector } from '../components/dashboard/MarketSelector';
@@ -11,6 +11,16 @@ export const DashboardPage: React.FC = () => {
   const selectedMarket = selectedMarkets[0] || 'GC';
   const latestQuery = useCotData(selectedMarket);
   const historyQuery = useCotHistory(selectedMarket);
+
+  // Extract report dates for price alignment
+  const reportDates = useMemo(() => {
+    if (!historyQuery.data?.reports) return undefined;
+    return historyQuery.data.reports.map(r =>
+      new Date(r.report_date).toISOString().split('T')[0]
+    );
+  }, [historyQuery.data]);
+
+  const priceQuery = useAssetPrices(selectedMarket, reportDates);
 
   if (latestQuery.isLoading || historyQuery.isLoading) {
     return (
@@ -133,6 +143,7 @@ export const DashboardPage: React.FC = () => {
             {historyQuery.data && (
               <StackedBarChart
                 data={historyQuery.data.reports}
+                priceData={priceQuery.data?.prices}
                 darkMode={darkMode}
               />
             )}

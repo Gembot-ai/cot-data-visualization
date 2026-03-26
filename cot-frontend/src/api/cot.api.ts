@@ -3,6 +3,7 @@ import type {
   CotResponse,
   CotHistoryResponse,
   CotBatchResponse,
+  PriceResponse,
 } from './types';
 
 export const cotApi = {
@@ -35,6 +36,18 @@ export const cotApi = {
 
   getAllLatest: async (): Promise<CotBatchResponse> => {
     const response = await apiClient.get('/cot/latest/all');
+    return response.data;
+  },
+
+  getPrices: async (
+    marketSymbol: string,
+    reportDates?: string[]
+  ): Promise<PriceResponse> => {
+    const params: any = {};
+    if (reportDates && reportDates.length > 0) {
+      params.report_dates = reportDates.join(',');
+    }
+    const response = await apiClient.get(`/cot/${marketSymbol}/prices`, { params });
     return response.data;
   },
 };

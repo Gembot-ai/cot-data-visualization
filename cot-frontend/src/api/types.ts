@@ -46,3 +46,14 @@ export interface CotBatchResponse {
   }>;
   count: number;
 }
+
+export interface PricePoint {
+  date: string;
+  close: number;
+  adjusted_close: number;
+}
+
+export interface PriceResponse {
+  ticker: string;
+  prices: PricePoint[];
+}

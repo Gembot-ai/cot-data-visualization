@@ -14,7 +14,7 @@ import {
   ChartOptions,
 } from 'chart.js';
 import { Chart } from 'react-chartjs-2';
-import type { CotData } from '../../api/types';
+import type { CotData, PricePoint } from '../../api/types';
 
 ChartJS.register(
   CategoryScale,
@@ -31,6 +31,7 @@ ChartJS.register(
 
 interface StackedBarChartProps {
   data: CotData[];
+  priceData?: PricePoint[];
   darkMode?: boolean;
 }
 
@@ -38,6 +39,7 @@ type DateRange = '1M' | '3M' | '6M' | '1Y' | '2Y' | '5Y' | 'ALL' | 'CUSTOM';
 
 export const StackedBarChart: React.FC<StackedBarChartProps> = ({
   data,
+  priceData,
   darkMode = false,
 }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -53,14 +55,14 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
     smallSpeculators: true,
     largeSpeculators: true,
     commercials: true,
-    openInterest: true,
+    price: true,
   });
 
   const colors = {
     smallSpeculators: '#fbbf24',
     largeSpeculators: '#3b82f6',
     commercials: '#ef4444',
-    openInterest: '#10b981',
+    price: '#10b981',
   };
 
   const toggleSeries = (series: keyof typeof visibleSeries) => {
@@ -154,6 +156,17 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
     return processed.filter(d => new Date(d.report_date) >= cutoffDate);
   }, [data, dateRange, customStartDate, customEndDate]);
 
+  // Build a price lookup map by date
+  const priceLookup = useMemo(() => {
+    const map = new Map<string, number>();
+    if (priceData) {
+      for (const p of priceData) {
+        map.set(p.date, p.adjusted_close);
+      }
+    }
+    return map;
+  }, [priceData]);
+
   const chartData = useMemo(() =>
     filteredData
       .slice()
@@ -162,6 +175,7 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
         const commercialNet = d.commercial_long - d.commercial_short;
         const largeSpecNet = d.non_commercial_long - d.non_commercial_short;
         const smallSpecNet = (d.non_reportable_long || 0) - (d.non_reportable_short || 0);
+        const dateKey = new Date(d.report_date).toISOString().split('T')[0];
 
         return {
           date: new Date(d.report_date).toLocaleDateString('en-US', {
@@ -172,10 +186,10 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
           smallSpecNet,
           largeSpecNet,
           commercialNet,
-          openInterest: d.open_interest,
+          price: priceLookup.get(dateKey) ?? null,
         };
       }),
-    [filteredData]
+    [filteredData, priceLookup]
   );
 
   const labels = useMemo(() => chartData.map(d => d.date), [chartData]);
@@ -215,9 +229,9 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
       },
       {
         type: 'line' as const,
-        label: 'Open Interest',
-        data: visibleSeries.openInterest ? chartData.map(d => d.openInterest) : [],
-        borderColor: 'rgba(16, 185, 129, 0.7)', // 70% opacity green
+        label: 'Price',
+        data: visibleSeries.price ? chartData.map(d => d.price) : [],
+        borderColor: 'rgba(16, 185, 129, 0.7)',
         backgroundColor: 'transparent',
         borderWidth: 2.5,
         yAxisID: 'y1',
@@ -226,7 +240,8 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
         fill: false,
         tension: 0.4,
         order: 1,
-        hidden: !visibleSeries.openInterest,
+        hidden: !visibleSeries.price,
+        spanGaps: true,
       },
     ],
   };
@@ -257,7 +272,14 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
               label += ': ';
             }
             if (context.parsed.y !== null) {
-              label += context.parsed.y.toLocaleString();
+              if (context.dataset.label === 'Price') {
+                label += context.parsed.y.toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                });
+              } else {
+                label += context.parsed.y.toLocaleString();
+              }
             }
             return label;
           }
@@ -317,11 +339,11 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
       y1: {
         type: 'linear',
         position: 'right',
-        display: visibleSeries.openInterest,
+        display: visibleSeries.price,
         title: {
-          display: window.innerWidth >= 640 && visibleSeries.openInterest,
-          text: 'Open Interest',
-          color: colors.openInterest,
+          display: window.innerWidth >= 640 && visibleSeries.price,
+          text: 'Price',
+          color: colors.price,
           font: {
             size: 11,
             weight: 600,
@@ -331,21 +353,23 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
           drawOnChartArea: false,
         },
         ticks: {
-          color: colors.openInterest,
+          color: colors.price,
           font: {
             size: window.innerWidth < 640 ? 9 : 11,
             weight: 500,
           },
           maxTicksLimit: window.innerWidth < 640 ? 5 : 7,
           callback: function(value: any) {
-            const absValue = Math.abs(value);
-            if (absValue >= 1000000) {
-              return (value / 1000000).toFixed(1) + 'M';
+            if (Math.abs(value) >= 10000) {
+              return value.toLocaleString(undefined, { maximumFractionDigits: 0 });
             }
-            return (value / 1000).toFixed(0) + 'K';
+            if (Math.abs(value) >= 100) {
+              return value.toLocaleString(undefined, { maximumFractionDigits: 1 });
+            }
+            return value.toLocaleString(undefined, { maximumFractionDigits: 2 });
           }
         },
-        // Force open interest to use upper half of chart
+        // Force price to use upper half of chart
         min: (function(context: any) {
           const data = context.chart.data.datasets.find((d: any) => d.yAxisID === 'y1')?.data || [];
           const values = data.filter((v: any) => v !== null && v !== undefined) as number[];
@@ -353,7 +377,6 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
           const minVal = Math.min(...values);
           const maxVal = Math.max(...values);
           const range = maxVal - minVal;
-          // Start scale at min - (range * 2) to push line to top half
           return minVal - (range * 2);
         }) as any,
         max: (function(context: any) {
@@ -363,7 +386,6 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
           const maxVal = Math.max(...values);
           const minVal = Math.min(...values);
           const range = maxVal - minVal;
-          // Add small padding at top
           return maxVal + (range * 0.1);
         }) as any,
       },
@@ -439,15 +461,15 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
             <span className="text-gray-600 dark:text-gray-400 truncate">Commercials</span>
           </button>
           <button
-            onClick={() => toggleSeries('openInterest')}
+            onClick={() => toggleSeries('price')}
             className={`flex items-center gap-1.5 p-2 rounded-lg active:scale-95 transition-all ${
-              visibleSeries.openInterest
+              visibleSeries.price
                 ? 'bg-gray-50 dark:bg-gray-800'
                 : 'bg-gray-100 dark:bg-gray-700 opacity-40'
             }`}
           >
-            <div className="w-4 h-0.5 flex-shrink-0" style={{ backgroundColor: colors.openInterest }}></div>
-            <span className="text-gray-600 dark:text-gray-400 truncate">Open Interest</span>
+            <div className="w-4 h-0.5 flex-shrink-0" style={{ backgroundColor: colors.price }}></div>
+            <span className="text-gray-600 dark:text-gray-400 truncate">Price</span>
           </button>
         </div>
       </div>
@@ -538,15 +560,15 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
           <span className="text-gray-600 dark:text-gray-400">Commercials</span>
         </button>
         <button
-          onClick={() => toggleSeries('openInterest')}
+          onClick={() => toggleSeries('price')}
           className={`flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-all ${
-            visibleSeries.openInterest
+            visibleSeries.price
               ? 'bg-gray-50 dark:bg-gray-800'
               : 'bg-gray-100 dark:bg-gray-700 opacity-40'
           }`}
         >
-          <div className="w-8 h-0.5" style={{ backgroundColor: colors.openInterest }}></div>
-          <span className="text-gray-600 dark:text-gray-400">Open Interest</span>
+          <div className="w-8 h-0.5" style={{ backgroundColor: colors.price }}></div>
+          <span className="text-gray-600 dark:text-gray-400">Price</span>
         </button>
       </div>
 

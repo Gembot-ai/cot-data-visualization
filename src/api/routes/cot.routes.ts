@@ -2,9 +2,11 @@ import { FastifyInstance } from 'fastify';
 import { CotController } from '../controllers/cot.controller';
 import { fetchAllCotData } from '../../scripts/fetch-all-cot-data';
 import { logger } from '../../utils/logger';
+import { EodPriceService } from '../../services/eod-price.service';
 
 export async function cotRoutes(fastify: FastifyInstance) {
   const controller = new CotController();
+  const priceService = new EodPriceService();
 
   // GET /api/v1/cot/:marketSymbol - Latest CoT for single market
   fastify.get<{ Params: { marketSymbol: string } }>(
@@ -81,6 +83,51 @@ export async function cotRoutes(fastify: FastifyInstance) {
   fastify.get('/cot/latest/all', async (request, reply) => {
     return controller.getAllLatest();
   });
+
+  // GET /api/v1/cot/:marketSymbol/prices - Asset price data from EODHD
+  fastify.get<{
+    Params: { marketSymbol: string };
+    Querystring: { from?: string; to?: string; report_dates?: string };
+  }>(
+    '/cot/:marketSymbol/prices',
+    {
+      schema: {
+        querystring: {
+          type: 'object',
+          properties: {
+            from: { type: 'string' },
+            to: { type: 'string' },
+            report_dates: { type: 'string' },
+          }
+        }
+      }
+    },
+    async (request, reply) => {
+      const { marketSymbol } = request.params;
+      const { from, to, report_dates } = request.query;
+
+      try {
+        const reportDates = report_dates ? report_dates.split(',') : undefined;
+        const result = await priceService.getPrices(
+          marketSymbol.toUpperCase(),
+          from,
+          to,
+          reportDates
+        );
+        return result;
+      } catch (error) {
+        logger.error({ error, marketSymbol }, 'Failed to fetch price data');
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        if (message.includes('No EOD ticker mapping')) {
+          return reply.code(404).send({ error: message });
+        }
+        if (message.includes('not configured')) {
+          return reply.code(503).send({ error: 'Price data service not configured' });
+        }
+        return reply.code(500).send({ error: 'Failed to fetch price data' });
+      }
+    }
+  );
 
   // POST /api/v1/cot/update - Manually trigger data update
   fastify.post('/cot/update', async (request, reply) => {

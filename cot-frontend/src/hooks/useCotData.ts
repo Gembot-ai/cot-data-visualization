@@ -43,3 +43,17 @@ export function useAllLatestCot() {
     gcTime: 1000 * 60 * 60 * 24,
   });
 }
+
+export function useAssetPrices(
+  marketSymbol: string,
+  reportDates?: string[]
+) {
+  return useQuery({
+    queryKey: ['asset-prices', marketSymbol, reportDates],
+    queryFn: () => cotApi.getPrices(marketSymbol, reportDates),
+    staleTime: 1000 * 60 * 60 * 24, // 24 hours
+    gcTime: 1000 * 60 * 60 * 24 * 7,
+    retry: 1,
+    enabled: !!marketSymbol && (reportDates?.length ?? 0) > 0,
+  });
+}
