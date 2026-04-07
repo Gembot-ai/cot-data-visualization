@@ -63,7 +63,7 @@ export const DashboardPage: React.FC = () => {
                 <h1 className="text-lg font-bold text-eccuity-dark-300 leading-tight">
                   CoT Dashboard
                 </h1>
-                <p className="text-[10px] text-eccuity-light-400 font-medium">CFTC Weekly Reports</p>
+                <p className="text-[10px] text-eccuity-light-400 font-medium">See where retail, hedge funds and commercial hedgers are positioned.</p>
               </div>
             </div>
             {latestQuery.data && (
@@ -89,7 +89,7 @@ export const DashboardPage: React.FC = () => {
               <h1 className="text-4xl font-bold mb-2 text-eccuity-dark-300">
                 Commitment of Traders
               </h1>
-              <p className="text-sm text-eccuity-light-400 font-medium">CFTC Weekly Reports</p>
+              <p className="text-sm text-eccuity-light-400 font-medium">See where retail, hedge funds and commercial hedgers are positioned.</p>
             </div>
           </div>
           <div className="flex items-center gap-4">
