@@ -12,6 +12,10 @@ import { CFTC_CONTRACT_CODES } from '../config/cftc-contract-codes';
 
 const CFTC_API_BASE = 'https://publicreporting.cftc.gov/resource/6dca-aqww.json';
 
+function sanitizeSoql(value: string): string {
+  return value.replace(/[^a-zA-Z0-9\-_.]/g, '');
+}
+
 interface CFTCRecord {
   cftc_contract_market_code: string;
   market_and_exchange_names: string;
@@ -73,7 +77,7 @@ async function validateCotData() {
       // Fetch latest data from CFTC for this contract
       const cftcResponse = await axios.get(CFTC_API_BASE, {
         params: {
-          '$where': `cftc_contract_market_code = '${cftcCode}'`,
+          '$where': `cftc_contract_market_code = '${sanitizeSoql(cftcCode)}'`,
           '$order': 'report_date_as_yyyy_mm_dd DESC',
           '$limit': 1
         }

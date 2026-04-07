@@ -14,8 +14,13 @@ export function errorHandler(
 
   const statusCode = error.statusCode || 500;
 
+  // Don't leak internal details in production
+  const message = statusCode >= 500 && process.env.NODE_ENV === 'production'
+    ? 'Internal Server Error'
+    : error.message || 'Internal Server Error';
+
   reply.code(statusCode).send({
-    error: error.message || 'Internal Server Error',
+    error: message,
     statusCode,
     timestamp: new Date().toISOString()
   });

@@ -6,6 +6,12 @@ import { fetchAllCotData } from '../../scripts/fetch-all-cot-data';
 
 const CFTC_API_BASE = 'https://publicreporting.cftc.gov/resource/6dca-aqww.json';
 
+// Sanitize values for SoQL $where clauses (prevent injection)
+function sanitizeSoql(value: string): string {
+  // Only allow alphanumeric, hyphens, and dots (covers dates and contract codes)
+  return value.replace(/[^a-zA-Z0-9\-_.]/g, '');
+}
+
 interface ValidationResult {
   symbol: string;
   cftcCode: string;
@@ -46,7 +52,7 @@ export class AdminController {
           // Fetch latest from CFTC
           const cftcResponse = await axios.get(CFTC_API_BASE, {
             params: {
-              '$where': `cftc_contract_market_code = '${cftcCode}'`,
+              '$where': `cftc_contract_market_code = '${sanitizeSoql(cftcCode)}'`,
               '$order': 'report_date_as_yyyy_mm_dd DESC',
               '$limit': 1
             },
@@ -198,7 +204,7 @@ export class AdminController {
             '$limit': limit,
             '$offset': offset,
             '$order': 'report_date_as_yyyy_mm_dd DESC',
-            '$where': `report_date_as_yyyy_mm_dd >= '${startDateStr}'`
+            '$where': `report_date_as_yyyy_mm_dd >= '${sanitizeSoql(startDateStr)}'`
           },
           timeout: 120000 // 2 minute timeout for larger batches
         });

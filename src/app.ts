@@ -1,5 +1,7 @@
 import Fastify from 'fastify';
 import fastifyCors from '@fastify/cors';
+import fastifyHelmet from '@fastify/helmet';
+import fastifyRateLimit from '@fastify/rate-limit';
 import fastifyStatic from '@fastify/static';
 import path from 'path';
 import { env } from './config/env';
@@ -18,13 +20,22 @@ export async function buildApp() {
     disableRequestLogging: false
   });
 
+  // Security headers
+  await fastify.register(fastifyHelmet, {
+    contentSecurityPolicy: env.NODE_ENV === 'production' ? undefined : false,
+  });
+
+  // Rate limiting
+  await fastify.register(fastifyRateLimit, {
+    max: 100,
+    timeWindow: '1 minute',
+  });
+
   // CORS
   await fastify.register(fastifyCors, {
     origin: env.FRONTEND_URL || 'http://localhost:3000',
     credentials: true
   });
-
-  // Password authentication removed - app is now public
 
   // API Routes
   await fastify.register(cotRoutes, { prefix: '/api/v1' });
@@ -60,7 +71,7 @@ export async function buildApp() {
       }
     });
 
-    logger.info('✅ Frontend static files registered');
+    logger.info('Frontend static files registered');
   } else {
     // API info route (only in development)
     fastify.get('/', async () => ({

@@ -6,9 +6,9 @@ import { env } from '../../config/env';
 export async function adminRoutes(fastify: FastifyInstance) {
   const controller = new AdminController();
 
-  // Simple auth check - uses ADMIN_KEY env var
+  // Auth check - header only, no query params
   const checkAdminAuth = (request: any, reply: any) => {
-    const adminKey = request.headers['x-admin-key'] || request.query.adminKey;
+    const adminKey = request.headers['x-admin-key'];
     const expectedKey = env.ADMIN_KEY || process.env.ADMIN_KEY;
 
     if (!expectedKey) {
@@ -17,21 +17,22 @@ export async function adminRoutes(fastify: FastifyInstance) {
     }
 
     if (adminKey !== expectedKey) {
-      return reply.code(401).send({ error: 'Invalid admin key' });
+      logger.warn({ ip: request.ip, url: request.url }, 'Failed admin auth attempt');
+      return reply.code(401).send({ error: 'Unauthorized' });
     }
   };
 
-  // GET /api/v1/admin/status - Data health check
+  // GET /api/v1/admin/status - Data health check (now requires auth)
   fastify.get('/admin/status', async (request, reply) => {
+    checkAdminAuth(request, reply);
+    if (reply.sent) return;
+
     try {
       const status = await controller.getDataStatus();
       return status;
     } catch (error) {
       logger.error({ error }, 'Failed to get status');
-      return reply.code(500).send({
-        error: 'Failed to get status',
-        message: error instanceof Error ? error.message : 'Unknown error'
-      });
+      return reply.code(500).send({ error: 'Failed to get status' });
     }
   });
 
@@ -46,10 +47,7 @@ export async function adminRoutes(fastify: FastifyInstance) {
       return result;
     } catch (error) {
       logger.error({ error }, 'Validation failed');
-      return reply.code(500).send({
-        error: 'Validation failed',
-        message: error instanceof Error ? error.message : 'Unknown error'
-      });
+      return reply.code(500).send({ error: 'Validation failed' });
     }
   });
 
@@ -65,7 +63,6 @@ export async function adminRoutes(fastify: FastifyInstance) {
       const runInBackground = (request.query as any).background === 'true';
 
       if (runInBackground) {
-        // Start refetch in background
         controller.refetchAll()
           .then(result => logger.info({ result }, 'Background refetch completed'))
           .catch(err => logger.error({ err }, 'Background refetch failed'));
@@ -77,20 +74,16 @@ export async function adminRoutes(fastify: FastifyInstance) {
         };
       }
 
-      // Run synchronously (may timeout for large datasets)
       const result = await controller.refetchAll();
       return result;
 
     } catch (error) {
       logger.error({ error }, 'Refetch failed');
-      return reply.code(500).send({
-        error: 'Refetch failed',
-        message: error instanceof Error ? error.message : 'Unknown error'
-      });
+      return reply.code(500).send({ error: 'Refetch failed' });
     }
   });
 
-  // POST /api/v1/admin/update - Incremental update (existing endpoint moved here)
+  // POST /api/v1/admin/update - Incremental update
   fastify.post('/admin/update', async (request, reply) => {
     checkAdminAuth(request, reply);
     if (reply.sent) return;
@@ -100,7 +93,6 @@ export async function adminRoutes(fastify: FastifyInstance) {
 
       logger.info('Manual update triggered via API');
 
-      // Run in background
       fetchAllCotData().catch(err => {
         logger.error({ err }, 'Background update failed');
       });
@@ -112,10 +104,7 @@ export async function adminRoutes(fastify: FastifyInstance) {
       };
     } catch (error) {
       logger.error({ error }, 'Failed to trigger update');
-      return reply.code(500).send({
-        error: 'Failed to trigger update',
-        message: error instanceof Error ? error.message : 'Unknown error'
-      });
+      return reply.code(500).send({ error: 'Failed to trigger update' });
     }
   });
 }
