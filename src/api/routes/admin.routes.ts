@@ -22,11 +22,8 @@ export async function adminRoutes(fastify: FastifyInstance) {
     }
   };
 
-  // GET /api/v1/admin/status - Data health check (now requires auth)
+  // GET /api/v1/admin/status - Data health check (public, read-only)
   fastify.get('/admin/status', async (request, reply) => {
-    checkAdminAuth(request, reply);
-    if (reply.sent) return;
-
     try {
       const status = await controller.getDataStatus();
       return status;
