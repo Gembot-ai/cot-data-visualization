@@ -1,6 +1,16 @@
 # Railway Cron Job Setup
 
-To automatically update CoT data every week, you need to create a Cron Job in Railway.
+> **Note:** This is now OPTIONAL. The app has a built-in scheduler that
+> automatically refreshes CoT data **daily** while the web service is running —
+> no Railway cron job or manual `npm run weekly-update` required. It's wired up
+> in `src/jobs/scheduler.ts` and starts with the server.
+>
+> Configure it with env vars (see `.env.example`):
+> - `DATA_FETCH_CRON` — cron expression in UTC (default `0 21 * * *`, daily at 21:00 UTC)
+> - `ENABLE_SCHEDULER` — `true`/`false` (defaults to `true` in production)
+>
+> The instructions below are only needed if you prefer to run the update as a
+> separate Railway cron job instead of (or in addition to) the in-app scheduler.
 
 ## Steps:
 

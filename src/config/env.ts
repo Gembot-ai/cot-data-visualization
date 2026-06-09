@@ -34,8 +34,19 @@ export const env = {
   // CFTC API
   CFTC_API_BASE: process.env.CFTC_API_BASE || 'https://publicreporting.cftc.gov/api/',
 
-  // Job Scheduler
-  WEEKLY_FETCH_CRON: process.env.WEEKLY_FETCH_CRON || '0 20 * * FRI',
+  // Job Scheduler — automatic CoT data refresh (cron expression, UTC).
+  // Defaults to DAILY at 21:00 UTC (CFTC publishes Fri ~20:30 UTC; running
+  // daily catches the new report the next time it fires even if the service
+  // was redeploying at release time). Override with DATA_FETCH_CRON.
+  // NOTE: the legacy WEEKLY_FETCH_CRON var is intentionally NOT used — it held
+  // a weekly schedule, which is exactly what we're moving away from.
+  DATA_FETCH_CRON: process.env.DATA_FETCH_CRON || '0 21 * * *',
+
+  // Run the in-app scheduler. Enabled in production by default; in development
+  // set ENABLE_SCHEDULER=true to opt in (avoids hitting CFTC during local dev).
+  ENABLE_SCHEDULER: process.env.ENABLE_SCHEDULER
+    ? process.env.ENABLE_SCHEDULER === 'true'
+    : isProduction,
 
   // App Password Protection (optional - leave empty to disable)
   APP_PASSWORD: process.env.APP_PASSWORD || '',

@@ -133,7 +133,12 @@ export async function cotRoutes(fastify: FastifyInstance) {
           properties: {
             from: { type: 'string' },
             to: { type: 'string' },
-            report_dates: { type: 'string', maxLength: 5000 },
+            // The frontend sends one date per COT report for the full history
+            // (~52/year). At ~11 chars each, 10 years ≈ 5,900 chars, which
+            // exceeded the old 5,000 cap and caused a 400 — so prices silently
+            // failed to load. 12,000 covers ~20 years while staying well under
+            // Node's ~16KB request-line limit.
+            report_dates: { type: 'string', maxLength: 12000 },
           }
         }
       }

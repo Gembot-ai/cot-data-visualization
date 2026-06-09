@@ -9,6 +9,13 @@ export interface PricePoint {
 
 const EOD_API_BASE = 'https://eodhd.com/api';
 
+/** Shift a YYYY-MM-DD date string by `days` (can be negative). Returns YYYY-MM-DD. */
+function shiftDate(date: string, days: number): string {
+  const d = new Date(`${date}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().split('T')[0];
+}
+
 export class EodPriceService {
   private apiKey: string;
 
@@ -39,14 +46,27 @@ export class EodPriceService {
       throw new Error('EOD_API_KEY not configured');
     }
 
+    // Bound the fetch to the requested report dates when an explicit
+    // from/to wasn't given. Otherwise EODHD returns the ticker's entire
+    // history (20+ years of daily candles) on every request, which is slow
+    // and burns API quota. We pad `from` back a few days so that the very
+    // first report date still has a trading day on/before it to align to.
+    let effectiveFrom = from;
+    let effectiveTo = to;
+    if (!effectiveFrom && reportDates && reportDates.length > 0) {
+      const sorted = [...reportDates].sort();
+      effectiveFrom = shiftDate(sorted[0], -7);
+      effectiveTo = effectiveTo || sorted[sorted.length - 1];
+    }
+
     const url = new URL(`${EOD_API_BASE}/eod/${ticker}`);
     url.searchParams.set('api_token', this.apiKey);
     url.searchParams.set('fmt', 'json');
     url.searchParams.set('order', 'a'); // ascending by date
-    if (from) url.searchParams.set('from', from);
-    if (to) url.searchParams.set('to', to);
+    if (effectiveFrom) url.searchParams.set('from', effectiveFrom);
+    if (effectiveTo) url.searchParams.set('to', effectiveTo);
 
-    logger.info({ ticker, from, to }, 'Fetching EOD price data');
+    logger.info({ ticker, from: effectiveFrom, to: effectiveTo }, 'Fetching EOD price data');
 
     const response = await fetch(url.toString());
     if (!response.ok) {

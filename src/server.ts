@@ -4,6 +4,7 @@ import { testConnection } from './config/database';
 import { logger } from './utils/logger';
 import { MarketsRepository } from './database/repositories/markets.repo';
 import { MARKETS } from './utils/constants';
+import { startScheduler } from './jobs/scheduler';
 
 async function start() {
   try {
@@ -62,6 +63,13 @@ async function start() {
       { port: env.PORT, env: env.NODE_ENV },
       'Server started successfully'
     );
+
+    // Start the automatic daily CoT data refresh.
+    if (env.ENABLE_SCHEDULER) {
+      startScheduler();
+    } else {
+      logger.info('Data scheduler disabled (set ENABLE_SCHEDULER=true to enable)');
+    }
   } catch (error) {
     logger.error({ error }, 'Failed to start server');
     process.exit(1);
