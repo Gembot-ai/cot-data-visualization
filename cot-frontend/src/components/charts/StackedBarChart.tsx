@@ -14,7 +14,11 @@ import {
   ChartOptions,
 } from 'chart.js';
 import { Chart } from 'react-chartjs-2';
+import { Maximize2, Minimize2 } from 'lucide-react';
 import type { CotData, PricePoint } from '../../api/types';
+import { useThemeObserver } from '../../lib/theme';
+import { chartColor, cssVar, withAlpha } from '../../lib/chartColors';
+import { formatCompact, formatNumber, formatPrice } from '../../lib/format';
 
 ChartJS.register(
   CategoryScale,
@@ -34,7 +38,6 @@ interface StackedBarChartProps {
   priceData?: PricePoint[];
   priceTicker?: string;
   priceName?: string;
-  darkMode?: boolean;
 }
 
 type DateRange = '1M' | '3M' | '6M' | '1Y' | '2Y' | '5Y' | 'ALL' | 'CUSTOM';
@@ -44,8 +47,8 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
   priceData,
   priceTicker,
   priceName,
-  darkMode = false,
 }) => {
+  const theme = useThemeObserver();
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [dateRange, setDateRange] = useState<DateRange>('1Y');
   const [customStartDate, setCustomStartDate] = useState('');
@@ -70,11 +73,16 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
     ? `Price (${tickerShort})`
     : 'Price';
 
+  // Brand chart palette, read from the @gem/design --chart-* tokens so series
+  // colors follow the active light/dark theme. Recomputed each render (the
+  // component re-renders when `theme` flips via useThemeObserver), so the values
+  // always reflect the current CSS variables.
+  // Commercials -> red, Large Speculators -> blue, Small Speculators -> amber, Price -> emerald.
   const colors = {
-    smallSpeculators: '#fbbf24',
-    largeSpeculators: '#3b82f6',
-    commercials: '#ef4444',
-    price: '#10b981',
+    smallSpeculators: chartColor(5),
+    largeSpeculators: chartColor(4),
+    commercials: chartColor(2),
+    price: chartColor(1),
   };
 
   const toggleSeries = (series: keyof typeof visibleSeries) => {
@@ -103,10 +111,10 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
-  // Force chart re-render when date range changes
+  // Force chart re-render when date range or theme changes
   useEffect(() => {
     setChartKey(prev => prev + 1);
-  }, [dateRange, customStartDate, customEndDate]);
+  }, [dateRange, customStartDate, customEndDate, theme]);
 
   // Memoize filtered data to avoid recalculation on every render
   const filteredData = useMemo(() => {
@@ -243,7 +251,7 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
         type: 'line' as const,
         label: priceLabel,
         data: visibleSeries.price ? chartData.map(d => d.price) : [],
-        borderColor: 'rgba(16, 185, 129, 0.7)',
+        borderColor: withAlpha(colors.price, 0.85),
         backgroundColor: 'transparent',
         borderWidth: 2.5,
         yAxisID: 'y1',
@@ -258,6 +266,12 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
     ],
   };
 
+  // Theme-aware chart chrome, read from the brand CSS variables. Gridlines use a
+  // low-alpha foreground so they stay visible against bg-card in BOTH themes
+  // (in dark, --subtle-border collapses to the card color, so it can't be used here).
+  const gridColor = withAlpha(cssVar('--foreground'), 0.08);
+  const tickColor = cssVar('--subtle-foreground');
+
   const options: ChartOptions<'bar'> = {
     responsive: true,
     maintainAspectRatio: false,
@@ -270,11 +284,11 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
         display: false,
       },
       tooltip: {
-        backgroundColor: darkMode ? 'rgba(17, 24, 39, 0.95)' : 'rgba(255, 255, 255, 0.95)',
-        titleColor: darkMode ? '#fff' : '#000',
-        bodyColor: darkMode ? '#fff' : '#000',
-        borderColor: darkMode ? '#374151' : '#e5e7eb',
-        borderWidth: 2,
+        backgroundColor: cssVar('--card'),
+        titleColor: cssVar('--foreground'),
+        bodyColor: cssVar('--foreground'),
+        borderColor: cssVar('--border'),
+        borderWidth: 1,
         padding: 12,
         displayColors: true,
         callbacks: {
@@ -285,12 +299,9 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
             }
             if (context.parsed.y !== null) {
               if (context.dataset.label?.startsWith('Price')) {
-                label += context.parsed.y.toLocaleString(undefined, {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                });
+                label += formatPrice(context.parsed.y);
               } else {
-                label += context.parsed.y.toLocaleString();
+                label += formatNumber(context.parsed.y);
               }
             }
             return label;
@@ -302,10 +313,10 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
       x: {
         grid: {
           display: true,
-          color: darkMode ? 'rgba(55, 65, 81, 0.3)' : 'rgba(229, 231, 235, 0.4)',
+          color: gridColor,
         },
         ticks: {
-          color: darkMode ? '#9ca3af' : '#6b7280',
+          color: tickColor,
           font: {
             size: window.innerWidth < 640 ? 8 : 10,
             weight: 500,
@@ -323,28 +334,24 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
         title: {
           display: window.innerWidth >= 640,
           text: 'Net Contracts',
-          color: darkMode ? '#9ca3af' : '#6b7280',
+          color: tickColor,
           font: {
             size: 11,
             weight: 600,
           },
         },
         grid: {
-          color: darkMode ? 'rgba(55, 65, 81, 0.3)' : 'rgba(229, 231, 235, 0.4)',
+          color: gridColor,
         },
         ticks: {
-          color: darkMode ? '#9ca3af' : '#6b7280',
+          color: tickColor,
           font: {
             size: window.innerWidth < 640 ? 9 : 11,
             weight: 500,
           },
           maxTicksLimit: window.innerWidth < 640 ? 5 : 7,
           callback: function(value: any) {
-            const absValue = Math.abs(value);
-            if (absValue >= 1000000) {
-              return (value / 1000000).toFixed(1) + 'M';
-            }
-            return (value / 1000).toFixed(0) + 'K';
+            return formatCompact(value);
           }
         },
       },
@@ -373,12 +380,12 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
           maxTicksLimit: window.innerWidth < 640 ? 5 : 7,
           callback: function(value: any) {
             if (Math.abs(value) >= 10000) {
-              return value.toLocaleString(undefined, { maximumFractionDigits: 0 });
+              return formatNumber(value, { maximumFractionDigits: 0 });
             }
             if (Math.abs(value) >= 100) {
-              return value.toLocaleString(undefined, { maximumFractionDigits: 1 });
+              return formatNumber(value, { maximumFractionDigits: 1 });
             }
-            return value.toLocaleString(undefined, { maximumFractionDigits: 2 });
+            return formatNumber(value, { maximumFractionDigits: 2 });
           }
         },
         // Force price to use upper half of chart
@@ -407,18 +414,16 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
   return (
     <div
       ref={chartContainerRef}
-      className={`glass-strong w-full p-3 sm:p-6 rounded-xl sm:rounded-2xl shadow-glass dark:shadow-glass-dark ${
-        isFullscreen ? 'bg-white dark:bg-gray-900' : ''
-      }`}
+      className="w-full rounded-xl border border-subtle-border bg-card shadow-gem p-3 sm:p-6"
     >
       {/* Mobile header - more compact */}
       <div className="sm:hidden mb-3">
-        <h3 className="text-base font-bold text-gray-900 dark:text-white mb-2">
+        <h3 className="text-base font-bold text-foreground mb-2">
           Net Positions
         </h3>
 
         {/* Mobile-optimized date range selector */}
-        <div className="flex gap-1 overflow-x-auto -mx-3 px-3 pb-2 scrollbar-hide">
+        <div className="flex gap-1.5 overflow-x-auto -mx-3 px-3 pb-2 scrollbar-hide">
           {(['1M', '3M', '6M', '1Y', '2Y', 'ALL'] as DateRange[]).map((range) => (
             <button
               key={range}
@@ -426,10 +431,10 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
                 setDateRange(range);
                 setShowCustomDatePicker(false);
               }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap min-w-[44px] active:scale-95 ${
+              className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors whitespace-nowrap min-w-[44px] active:scale-95 ${
                 dateRange === range
-                  ? 'bg-blue-500 text-white shadow-md'
-                  : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 active:bg-gray-200'
+                  ? 'border-primary bg-primary text-primary-foreground'
+                  : 'border-subtle-border bg-card text-foreground/70 hover:bg-muted/40'
               }`}
             >
               {range}
@@ -442,53 +447,45 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
           <button
             onClick={() => toggleSeries('smallSpeculators')}
             className={`flex items-center gap-1.5 p-2 rounded-lg active:scale-95 transition-all ${
-              visibleSeries.smallSpeculators
-                ? 'bg-gray-50 dark:bg-gray-800'
-                : 'bg-gray-100 dark:bg-gray-700 opacity-40'
+              visibleSeries.smallSpeculators ? 'bg-muted/50' : 'bg-muted/30 opacity-40'
             }`}
           >
             <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: colors.smallSpeculators }}></div>
-            <span className="text-gray-600 dark:text-gray-400 truncate">Small Specs</span>
+            <span className="text-muted-foreground truncate">Small Specs</span>
           </button>
           <button
             onClick={() => toggleSeries('largeSpeculators')}
             className={`flex items-center gap-1.5 p-2 rounded-lg active:scale-95 transition-all ${
-              visibleSeries.largeSpeculators
-                ? 'bg-gray-50 dark:bg-gray-800'
-                : 'bg-gray-100 dark:bg-gray-700 opacity-40'
+              visibleSeries.largeSpeculators ? 'bg-muted/50' : 'bg-muted/30 opacity-40'
             }`}
           >
             <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: colors.largeSpeculators }}></div>
-            <span className="text-gray-600 dark:text-gray-400 truncate">Large Specs</span>
+            <span className="text-muted-foreground truncate">Large Specs</span>
           </button>
           <button
             onClick={() => toggleSeries('commercials')}
             className={`flex items-center gap-1.5 p-2 rounded-lg active:scale-95 transition-all ${
-              visibleSeries.commercials
-                ? 'bg-gray-50 dark:bg-gray-800'
-                : 'bg-gray-100 dark:bg-gray-700 opacity-40'
+              visibleSeries.commercials ? 'bg-muted/50' : 'bg-muted/30 opacity-40'
             }`}
           >
             <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: colors.commercials }}></div>
-            <span className="text-gray-600 dark:text-gray-400 truncate">Commercials</span>
+            <span className="text-muted-foreground truncate">Commercials</span>
           </button>
           <button
             onClick={() => toggleSeries('price')}
             className={`flex items-center gap-1.5 p-2 rounded-lg active:scale-95 transition-all ${
-              visibleSeries.price
-                ? 'bg-gray-50 dark:bg-gray-800'
-                : 'bg-gray-100 dark:bg-gray-700 opacity-40'
+              visibleSeries.price ? 'bg-muted/50' : 'bg-muted/30 opacity-40'
             }`}
           >
             <div className="w-4 h-0.5 flex-shrink-0" style={{ backgroundColor: colors.price }}></div>
-            <span className="text-gray-600 dark:text-gray-400 truncate">{priceLabel}</span>
+            <span className="text-muted-foreground truncate">{priceLabel}</span>
           </button>
         </div>
       </div>
 
       {/* Desktop header */}
       <div className="hidden sm:flex items-center justify-between mb-6">
-        <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
+        <h3 className="text-2xl font-bold text-foreground">
           Net Positions
         </h3>
 
@@ -506,10 +503,10 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
                     setShowCustomDatePicker(false);
                   }
                 }}
-                className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
+                className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
                   dateRange === range
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                    ? 'border-primary bg-primary text-primary-foreground'
+                    : 'border-subtle-border bg-card text-foreground/70 hover:bg-muted/40'
                 }`}
               >
                 {range}
@@ -520,18 +517,11 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
           {/* Fullscreen Button */}
           <button
             onClick={toggleFullscreen}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+            className="p-2 hover:bg-muted/40 rounded-md transition-colors text-muted-foreground"
             title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+            aria-label={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
           >
-            {isFullscreen ? (
-              <svg className="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            ) : (
-              <svg className="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-              </svg>
-            )}
+            {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
           </button>
         </div>
       </div>
@@ -540,70 +530,62 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
       <div className="hidden sm:flex flex-wrap items-center gap-3 text-xs font-medium mb-4">
         <button
           onClick={() => toggleSeries('smallSpeculators')}
-          className={`flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-all ${
-            visibleSeries.smallSpeculators
-              ? 'bg-gray-50 dark:bg-gray-800'
-              : 'bg-gray-100 dark:bg-gray-700 opacity-40'
+          className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all hover:bg-muted/60 ${
+            visibleSeries.smallSpeculators ? 'bg-muted/50' : 'bg-muted/30 opacity-40'
           }`}
         >
           <div className="w-3 h-3 rounded-full" style={{ backgroundColor: colors.smallSpeculators }}></div>
-          <span className="text-gray-600 dark:text-gray-400">Small Specs</span>
+          <span className="text-muted-foreground">Small Specs</span>
         </button>
         <button
           onClick={() => toggleSeries('largeSpeculators')}
-          className={`flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-all ${
-            visibleSeries.largeSpeculators
-              ? 'bg-gray-50 dark:bg-gray-800'
-              : 'bg-gray-100 dark:bg-gray-700 opacity-40'
+          className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all hover:bg-muted/60 ${
+            visibleSeries.largeSpeculators ? 'bg-muted/50' : 'bg-muted/30 opacity-40'
           }`}
         >
           <div className="w-3 h-3 rounded-full" style={{ backgroundColor: colors.largeSpeculators }}></div>
-          <span className="text-gray-600 dark:text-gray-400">Large Specs</span>
+          <span className="text-muted-foreground">Large Specs</span>
         </button>
         <button
           onClick={() => toggleSeries('commercials')}
-          className={`flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-all ${
-            visibleSeries.commercials
-              ? 'bg-gray-50 dark:bg-gray-800'
-              : 'bg-gray-100 dark:bg-gray-700 opacity-40'
+          className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all hover:bg-muted/60 ${
+            visibleSeries.commercials ? 'bg-muted/50' : 'bg-muted/30 opacity-40'
           }`}
         >
           <div className="w-3 h-3 rounded-full" style={{ backgroundColor: colors.commercials }}></div>
-          <span className="text-gray-600 dark:text-gray-400">Commercials</span>
+          <span className="text-muted-foreground">Commercials</span>
         </button>
         <button
           onClick={() => toggleSeries('price')}
-          className={`flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-all ${
-            visibleSeries.price
-              ? 'bg-gray-50 dark:bg-gray-800'
-              : 'bg-gray-100 dark:bg-gray-700 opacity-40'
+          className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all hover:bg-muted/60 ${
+            visibleSeries.price ? 'bg-muted/50' : 'bg-muted/30 opacity-40'
           }`}
         >
           <div className="w-8 h-0.5" style={{ backgroundColor: colors.price }}></div>
-          <span className="text-gray-600 dark:text-gray-400">{priceLabel}</span>
+          <span className="text-muted-foreground">{priceLabel}</span>
         </button>
       </div>
 
       {/* Custom Date Picker */}
       {showCustomDatePicker && (
-        <div className="mb-4 p-4 glass-strong rounded-lg flex items-center gap-4 flex-wrap">
-          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">From:</label>
+        <div className="mb-4 p-4 rounded-lg border border-subtle-border bg-card flex items-center gap-4 flex-wrap">
+          <label className="text-sm font-medium text-foreground">From:</label>
           <input
             type="date"
             value={customStartDate}
             onChange={(e) => setCustomStartDate(e.target.value)}
-            className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+            className="px-3 py-2 rounded-md border border-subtle-border bg-card text-foreground text-sm"
           />
-          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">To:</label>
+          <label className="text-sm font-medium text-foreground">To:</label>
           <input
             type="date"
             value={customEndDate}
             onChange={(e) => setCustomEndDate(e.target.value)}
-            className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+            className="px-3 py-2 rounded-md border border-subtle-border bg-card text-foreground text-sm"
           />
           <button
             onClick={() => setShowCustomDatePicker(false)}
-            className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors"
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90 transition-colors"
           >
             Apply
           </button>
@@ -611,7 +593,7 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
       )}
 
       <div className={isFullscreen ? 'h-[calc(100vh-120px)]' : 'h-[300px] sm:h-[600px]'}>
-        <Chart key={chartKey} type="bar" data={chartJsData as any} options={options} />
+        <Chart key={`${chartKey}-${theme}`} type="bar" data={chartJsData as any} options={options} />
       </div>
     </div>
   );
