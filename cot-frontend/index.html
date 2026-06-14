@@ -14,9 +14,8 @@
         try {
           var key = 'cot-theme';
           var stored = localStorage.getItem(key);
-          var theme = (stored === 'light' || stored === 'dark')
-            ? stored
-            : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+          // Default to light; honor an explicit stored choice only.
+          var theme = (stored === 'light' || stored === 'dark') ? stored : 'light';
           if (theme === 'dark') document.documentElement.classList.add('dark');
           var meta = document.querySelector('meta[name="theme-color"]');
           if (meta) meta.setAttribute('content', theme === 'dark' ? '#1a1a1a' : '#ffffff');
