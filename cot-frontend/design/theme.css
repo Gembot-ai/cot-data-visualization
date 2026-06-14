@@ -1,0 +1,105 @@
+/* Synced from @gem/design — do not edit here; edit in the monorepo. */
+/**
+ * @gem/design — semantic design tokens as plain CSS variables.
+ *
+ * Drop-in for projects that want the brand tokens without (or alongside) the
+ * Tailwind preset — e.g. Tailwind v4 (`@import '@gem/design/theme.css'`) or
+ * any non-Tailwind surface. Mirrors the :root / .dark blocks emitted by
+ * preset.cjs; keep the two in sync.
+ */
+:root {
+  --background: hsl(0, 0%, 100%);
+  --foreground: #1a1a1a;
+  --muted: #f3eeed;
+  --muted-foreground: #b9adb4;
+  --popover: hsl(0, 0%, 100%);
+  --popover-foreground: #352351;
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: #352351;
+  --border: #7d757d;
+  --input: #7d757d;
+  --primary: #352351;
+  --primary-foreground: hsl(0, 0%, 100%);
+  --secondary: #ff5748;
+  --secondary-foreground: hsl(0, 0%, 100%);
+  --accent: hsl(180, 25%, 88%);
+  --accent-foreground: #352351;
+  --destructive: #ff5748;
+  --destructive-foreground: hsl(0, 0%, 100%);
+  --ring: #352351;
+  --radius: 0.75rem;
+  --subtle-border: #e5e7eb;
+  --subtle-foreground: #6b7280;
+  --secondary-foreground-muted: #4b5563;
+  --hover-surface: #f9fafb;
+  --surface: #f9fafb;
+  --surface-raised: hsl(0, 0%, 100%);
+  --card-muted: #f3f4f6;
+  --neutral-25: #e7dcda;
+  --neutral-50: #f3eeed;
+  --neutral-75: #b9adb4;
+  --neutral-100: #939393;
+  --neutral-200: #7d757d;
+  --neutral-300: #3f3f42;
+  --neutral-400: #2c2c2f;
+  --neutral-500: #272727;
+  --neutral-600: #242424;
+  --neutral-700: #202021;
+  --neutral-800: #1e1e1e;
+  --neutral-900: #1b1b1b;
+  --neutral-950: #1a1a1a;
+  --chart-1: hsl(145, 85%, 50%);
+  --chart-2: hsl(2, 100%, 66%);
+  --chart-3: hsl(262, 65%, 55%);
+  --chart-4: hsl(200, 100%, 55%);
+  --chart-5: hsl(45, 100%, 50%);
+  --chart-6: hsl(175, 70%, 45%);
+  --chart-7: hsl(270, 70%, 65%);
+  --chart-8: hsl(25, 90%, 55%);
+  --chart-9: hsl(340, 80%, 60%);
+  --chart-10: hsl(120, 60%, 40%);
+  --chart-11: hsl(190, 85%, 50%);
+  --chart-12: hsl(290, 75%, 60%);
+}
+
+.dark {
+  --background: #1a1a1a;
+  --foreground: hsl(0, 0%, 98%);
+  --muted: #202021;
+  --muted-foreground: #b9adb4;
+  --popover: #1a1a1a;
+  --popover-foreground: hsl(0, 0%, 98%);
+  --card: #202021;
+  --card-foreground: hsl(0, 0%, 98%);
+  --border: #2c2c2f;
+  --input: #2c2c2f;
+  --primary: #5d4f74;
+  --primary-foreground: hsl(0, 0%, 100%);
+  --secondary: #ff5748;
+  --secondary-foreground: hsl(0, 0%, 100%);
+  --accent: hsl(180, 25%, 20%);
+  --accent-foreground: hsl(0, 0%, 98%);
+  --destructive: #ff5748;
+  --destructive-foreground: hsl(0, 0%, 100%);
+  --ring: #5d4f74;
+  --radius: 0.75rem;
+  --subtle-border: #202021;
+  --subtle-foreground: #9ca3af;
+  --secondary-foreground-muted: #9ca3af;
+  --hover-surface: #1e1e1e;
+  --surface: #1a1a1a;
+  --surface-raised: #202021;
+  --card-muted: #242424;
+  --chart-1: hsl(145, 85%, 60%);
+  --chart-2: hsl(2, 100%, 74%);
+  --chart-3: hsl(262, 65%, 65%);
+  --chart-4: hsl(200, 100%, 65%);
+  --chart-5: hsl(45, 100%, 65%);
+  --chart-6: hsl(175, 70%, 55%);
+  --chart-7: hsl(270, 70%, 75%);
+  --chart-8: hsl(25, 90%, 65%);
+  --chart-9: hsl(340, 80%, 70%);
+  --chart-10: hsl(120, 60%, 50%);
+  --chart-11: hsl(190, 85%, 60%);
+  --chart-12: hsl(290, 75%, 70%);
+}

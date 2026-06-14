@@ -8,6 +8,21 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="theme-color" content="#ffffff" />
     <title>CoT Report Dashboard</title>
+    <!-- Apply the persisted/preferred theme before paint to avoid a flash of the wrong theme. -->
+    <script>
+      (function () {
+        try {
+          var key = 'cot-theme';
+          var stored = localStorage.getItem(key);
+          var theme = (stored === 'light' || stored === 'dark')
+            ? stored
+            : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+          if (theme === 'dark') document.documentElement.classList.add('dark');
+          var meta = document.querySelector('meta[name="theme-color"]');
+          if (meta) meta.setAttribute('content', theme === 'dark' ? '#1a1a1a' : '#ffffff');
+        } catch (e) { /* no-op */ }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
