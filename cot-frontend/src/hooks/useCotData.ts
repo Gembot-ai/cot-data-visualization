@@ -25,25 +25,6 @@ export function useCotHistory(
   });
 }
 
-export function useMarketComparison(marketSymbols: string[]) {
-  return useQuery({
-    queryKey: ['comparison', marketSymbols],
-    queryFn: () => cotApi.getBatch(marketSymbols),
-    staleTime: 1000 * 60 * 30,
-    gcTime: 1000 * 60 * 60,
-    enabled: marketSymbols.length > 0,
-  });
-}
-
-export function useAllLatestCot() {
-  return useQuery({
-    queryKey: ['cot-all-latest'],
-    queryFn: () => cotApi.getAllLatest(),
-    staleTime: 1000 * 60 * 60, // 1 hour
-    gcTime: 1000 * 60 * 60 * 24,
-  });
-}
-
 export function useAssetPrices(
   marketSymbol: string,
   reportDates?: string[]

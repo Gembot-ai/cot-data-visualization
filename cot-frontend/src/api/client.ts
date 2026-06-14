@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { logger } from '../lib/logger';
 
 const API_URL = import.meta.env.VITE_API_URL || '';
 
@@ -17,11 +18,11 @@ apiClient.interceptors.response.use(
   },
   (error) => {
     if (error.response) {
-      console.error('API Error:', error.response.data);
+      logger.error('API Error:', error.response.data);
     } else if (error.request) {
-      console.error('Network Error:', error.message);
+      logger.error('Network Error:', error.message);
     } else {
-      console.error('Error:', error.message);
+      logger.error('Error:', error.message);
     }
     return Promise.reject(error);
   }

@@ -39,14 +39,6 @@ export interface MarketsResponse {
   count: number;
 }
 
-export interface CotBatchResponse {
-  results: Array<{
-    market: Market;
-    report: CotData;
-  }>;
-  count: number;
-}
-
 export interface PricePoint {
   date: string;
   close: number;
