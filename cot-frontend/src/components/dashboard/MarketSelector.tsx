@@ -1,12 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { ChevronDown, Search } from 'lucide-react';
 import { useMarkets } from '../../hooks/useMarkets';
 import type { Market } from '../../api/types';
+import { Skeleton } from '../ui/Skeleton';
 
 interface MarketSelectorProps {
   selectedMarkets: string[];
   onChange: (markets: string[]) => void;
-  darkMode?: boolean;
   multiSelect?: boolean;
 }
 
@@ -90,8 +91,8 @@ export const MarketSelector: React.FC<MarketSelectorProps> = ({
 
   if (isLoading) {
     return (
-      <div className="glass-strong px-4 py-3 rounded-xl animate-pulse">
-        <div className="h-6 bg-gray-300 dark:bg-gray-700 rounded w-32"></div>
+      <div className="rounded-lg sm:rounded-xl border border-subtle-border bg-card px-4 py-3">
+        <Skeleton className="h-6 w-32" />
       </div>
     );
   }
@@ -101,37 +102,35 @@ export const MarketSelector: React.FC<MarketSelectorProps> = ({
       <button
         ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
-        className="glass-strong w-full px-3 sm:px-6 py-2.5 sm:py-3 rounded-lg sm:rounded-xl shadow-glass dark:shadow-glass-dark active:scale-95 sm:hover:scale-105 transition-transform duration-200 flex items-center justify-between gap-2 sm:gap-4 min-h-[48px]"
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        aria-label="Select market"
+        className="w-full rounded-lg sm:rounded-xl border border-subtle-border bg-card px-3 sm:px-6 py-2.5 sm:py-3 active:scale-95 sm:hover:bg-muted/40 transition-all duration-200 flex items-center justify-between gap-2 sm:gap-4 min-h-[48px]"
       >
         <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-          <span className="text-base sm:text-2xl font-bold text-gray-900 dark:text-white whitespace-nowrap">
+          <span className="text-base sm:text-2xl font-bold text-foreground whitespace-nowrap">
             {selectedMarket?.symbol || 'Select'}
           </span>
           {selectedMarket && (
             <>
-              <div className="h-4 sm:h-6 w-px bg-gray-300 dark:bg-gray-600"></div>
-              <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-medium truncate">
+              <div className="h-4 sm:h-6 w-px bg-subtle-border"></div>
+              <span className="text-xs sm:text-sm text-muted-foreground font-medium truncate">
                 {selectedMarket.name}
               </span>
             </>
           )}
         </div>
-        <svg
-          className={`w-4 sm:w-5 h-4 sm:h-5 text-gray-500 dark:text-gray-400 transition-transform duration-200 flex-shrink-0 ${
+        <ChevronDown
+          className={`w-4 sm:w-5 h-4 sm:h-5 text-muted-foreground transition-transform duration-200 flex-shrink-0 ${
             isOpen ? 'rotate-180' : ''
           }`}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
+        />
       </button>
 
       {isOpen && createPortal(
         <div
           ref={dropdownRef}
-          className="fixed left-3 right-3 sm:left-auto sm:right-auto sm:w-[500px] glass-strong rounded-2xl shadow-2xl p-3 sm:p-4 max-h-[75vh] sm:max-h-[500px] overflow-hidden flex flex-col"
+          className="fixed left-3 right-3 sm:left-auto sm:right-auto sm:w-[500px] rounded-2xl border border-subtle-border bg-popover text-popover-foreground shadow-2xl p-3 sm:p-4 max-h-[75vh] sm:max-h-[500px] overflow-hidden flex flex-col"
           style={{
             top: dropdownPosition.top,
             left: window.innerWidth >= 640 ? dropdownPosition.left : '0.75rem',
@@ -140,13 +139,14 @@ export const MarketSelector: React.FC<MarketSelectorProps> = ({
           }}
         >
           {/* Search */}
-          <div className="mb-3">
+          <div className="relative mb-3">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
             <input
               type="text"
               placeholder="Search markets..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none text-base"
+              className="w-full pl-10 pr-4 py-3 rounded-xl border border-subtle-border bg-card text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary focus:border-transparent outline-none text-base"
               autoFocus
             />
           </div>
@@ -155,7 +155,7 @@ export const MarketSelector: React.FC<MarketSelectorProps> = ({
           <div className="overflow-y-auto flex-1 -mx-1 px-1 space-y-3">
             {Object.entries(groupedMarkets).map(([category, markets]) => (
               <div key={category}>
-                <div className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2 px-2">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2 px-2">
                   {category}
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
@@ -163,10 +163,10 @@ export const MarketSelector: React.FC<MarketSelectorProps> = ({
                     <button
                       key={market.symbol}
                       onClick={() => handleMarketToggle(market.symbol)}
-                      className={`text-left px-3 py-3 rounded-xl text-sm transition-all duration-150 min-h-[56px] active:scale-95 ${
+                      className={`text-left px-3 py-3 rounded-xl text-sm border transition-all duration-150 min-h-[56px] active:scale-95 ${
                         selectedMarkets.includes(market.symbol)
-                          ? 'bg-blue-500 text-white shadow-md'
-                          : 'bg-gray-50 dark:bg-gray-800 active:bg-gray-100 dark:active:bg-gray-700 text-gray-700 dark:text-gray-300'
+                          ? 'border-primary bg-primary text-primary-foreground'
+                          : 'border-subtle-border bg-card-muted hover:bg-muted/60 text-foreground'
                       }`}
                     >
                       <div className="font-mono font-bold text-sm mb-0.5">
@@ -183,7 +183,7 @@ export const MarketSelector: React.FC<MarketSelectorProps> = ({
           </div>
 
           {Object.keys(groupedMarkets).length === 0 && (
-            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+            <div className="text-center py-8 text-muted-foreground">
               No markets found
             </div>
           )}
