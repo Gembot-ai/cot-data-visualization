@@ -1,5 +1,6 @@
 import { CotReportsRepository } from '../../database/repositories/cot-reports.repo';
 import { MarketsRepository } from '../../database/repositories/markets.repo';
+import { recentWindowStart } from '../../config/auth';
 import { logger } from '../../utils/logger';
 
 export class CotController {
@@ -35,7 +36,8 @@ export class CotController {
   async getHistory(
     marketSymbol: string,
     startDate?: string,
-    endDate?: string
+    endDate?: string,
+    isLoggedIn = false
   ) {
     try {
       const market = await this.marketsRepo.findBySymbol(marketSymbol);
@@ -44,14 +46,22 @@ export class CotController {
       }
 
       let reports;
-      if (startDate && endDate) {
+      if (!isLoggedIn) {
+        // Anonymous: clamp to the recent window — cannot go further back than
+        // recentWindowStart(), regardless of any client-supplied start date.
+        const windowStart = recentWindowStart();
+        const requested = startDate ? new Date(startDate) : windowStart;
+        const start = requested < windowStart ? windowStart : requested;
+        const end = endDate ? new Date(endDate) : new Date();
+        reports = await this.reportsRepo.findByMarketAndDateRange(market.id, start, end);
+      } else if (startDate && endDate) {
         reports = await this.reportsRepo.findByMarketAndDateRange(
           market.id,
           new Date(startDate),
           new Date(endDate)
         );
       } else {
-        // No date params = get all historical data
+        // Logged-in, no date params = get all historical data
         reports = await this.reportsRepo.findHistoricalByMarket(market.id);
       }
 

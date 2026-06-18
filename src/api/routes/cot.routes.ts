@@ -3,6 +3,8 @@ import { CotController } from '../controllers/cot.controller';
 import { logger } from '../../utils/logger';
 import { EodPriceService } from '../../services/eod-price.service';
 import { CFTC_CONTRACT_CODES } from '../../config/cftc-contract-codes';
+import { optionalAuth } from '../middlewares/optional-auth';
+import { recentWindowStart } from '../../config/auth';
 
 const VALID_SYMBOLS = new Set(Object.keys(CFTC_CONTRACT_CODES));
 const MAX_BATCH_SYMBOLS = 10;
@@ -48,6 +50,7 @@ export async function cotRoutes(fastify: FastifyInstance) {
   }>(
     '/cot/:marketSymbol/history',
     {
+      preHandler: optionalAuth,
       schema: {
         querystring: {
           type: 'object',
@@ -74,7 +77,8 @@ export async function cotRoutes(fastify: FastifyInstance) {
         return reply.code(400).send({ error: 'Invalid end date format' });
       }
 
-      const result = await controller.getHistory(symbol, start, end);
+      // Anonymous users are clamped to the recent window inside the controller.
+      const result = await controller.getHistory(symbol, start, end, request.isLoggedIn);
 
       if (result.code === 404) {
         return reply.code(404).send(result);
@@ -127,6 +131,7 @@ export async function cotRoutes(fastify: FastifyInstance) {
   }>(
     '/cot/:marketSymbol/prices',
     {
+      preHandler: optionalAuth,
       schema: {
         querystring: {
           type: 'object',
@@ -160,8 +165,18 @@ export async function cotRoutes(fastify: FastifyInstance) {
       }
 
       try {
-        const reportDates = report_dates ? report_dates.split(',') : undefined;
-        const result = await priceService.getPrices(symbol, from, to, reportDates);
+        let reportDates = report_dates ? report_dates.split(',') : undefined;
+        let effectiveFrom = from;
+
+        // Anonymous: clamp the price overlay to the recent window (matches the
+        // history gate) so older prices can't be fetched without logging in.
+        if (!request.isLoggedIn) {
+          const windowStart = recentWindowStart().toISOString().split('T')[0];
+          reportDates = reportDates?.filter((d) => d >= windowStart);
+          effectiveFrom = from && from >= windowStart ? from : windowStart;
+        }
+
+        const result = await priceService.getPrices(symbol, effectiveFrom, to, reportDates);
         return result;
       } catch (error) {
         logger.error({ error, marketSymbol: symbol }, 'Failed to fetch price data');
