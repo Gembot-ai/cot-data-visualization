@@ -61,10 +61,12 @@ export const MarketSelector: React.FC<MarketSelectorProps> = ({
   // Update dropdown position when opening
   useEffect(() => {
     if (isOpen && buttonRef.current) {
+      // Dropdown is position:fixed (viewport-relative), so do NOT add scroll
+      // offsets — keeps it aligned to the trigger even inside the sticky nav.
       const rect = buttonRef.current.getBoundingClientRect();
       setDropdownPosition({
-        top: rect.bottom + window.scrollY + 8,
-        left: rect.left + window.scrollX,
+        top: rect.bottom + 8,
+        left: rect.left,
         width: rect.width
       });
     }
@@ -105,15 +107,15 @@ export const MarketSelector: React.FC<MarketSelectorProps> = ({
         aria-haspopup="listbox"
         aria-expanded={isOpen}
         aria-label="Select market"
-        className="w-full rounded-lg sm:rounded-xl border border-subtle-border bg-card px-3 sm:px-6 py-2.5 sm:py-3 active:scale-95 sm:hover:bg-muted/40 transition-all duration-200 flex items-center justify-between gap-2 sm:gap-4 min-h-[48px]"
+        className="w-full rounded-lg border border-subtle-border bg-card px-3 py-2 active:scale-[0.98] hover:bg-muted/40 transition-all duration-200 flex items-center justify-between gap-2 min-h-[40px]"
       >
-        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-          <span className="text-base sm:text-2xl font-bold text-foreground whitespace-nowrap">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <span className="text-sm sm:text-base font-bold text-foreground whitespace-nowrap">
             {selectedMarket?.symbol || 'Select'}
           </span>
           {selectedMarket && (
             <>
-              <div className="h-4 sm:h-6 w-px bg-subtle-border"></div>
+              <div className="h-4 w-px bg-subtle-border flex-shrink-0"></div>
               <span className="text-xs sm:text-sm text-muted-foreground font-medium truncate">
                 {selectedMarket.name}
               </span>
@@ -121,7 +123,7 @@ export const MarketSelector: React.FC<MarketSelectorProps> = ({
           )}
         </div>
         <ChevronDown
-          className={`w-4 sm:w-5 h-4 sm:h-5 text-muted-foreground transition-transform duration-200 flex-shrink-0 ${
+          className={`w-4 h-4 text-muted-foreground transition-transform duration-200 flex-shrink-0 ${
             isOpen ? 'rotate-180' : ''
           }`}
         />
