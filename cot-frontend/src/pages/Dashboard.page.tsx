@@ -1,19 +1,25 @@
 import React, { useMemo, useState } from 'react';
-import { Moon, Sun } from 'lucide-react';
+import { LogOut, Moon, Sun } from 'lucide-react';
 import { useCotData, useCotHistory, useAssetPrices } from '../hooks/useCotData';
 import { StackedBarChart } from '../components/charts/StackedBarChart';
 import { MetricsPanel } from '../components/dashboard/MetricsPanel';
 import { MarketSelector } from '../components/dashboard/MarketSelector';
 import { useTheme } from '../lib/theme';
+import { useAuth } from '../lib/auth';
 import { formatDate, formatSigned } from '../lib/format';
 
 export const DashboardPage: React.FC = () => {
   const [selectedMarkets, setSelectedMarkets] = useState<string[]>(['GC']);
   const { theme, toggleTheme } = useTheme();
+  const { authEnabled, isLoggedIn, user, login, logout } = useAuth();
+
+  // When login is configured but the user isn't signed in, history/prices are
+  // clamped to the recent window and far-back ranges are locked.
+  const restricted = authEnabled && !isLoggedIn;
 
   const selectedMarket = selectedMarkets[0] || 'GC';
   const latestQuery = useCotData(selectedMarket);
-  const historyQuery = useCotHistory(selectedMarket);
+  const historyQuery = useCotHistory(selectedMarket, undefined, undefined, isLoggedIn);
 
   // Extract report dates for price alignment
   const reportDates = useMemo(() => {
@@ -23,7 +29,7 @@ export const DashboardPage: React.FC = () => {
     );
   }, [historyQuery.data]);
 
-  const priceQuery = useAssetPrices(selectedMarket, reportDates);
+  const priceQuery = useAssetPrices(selectedMarket, reportDates, isLoggedIn);
 
   const ThemeToggle = () => (
     <button
@@ -102,14 +108,40 @@ export const DashboardPage: React.FC = () => {
                 </div>
               )}
               <ThemeToggle />
-              <a
-                href="https://app.eccuity.com/register"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hidden lg:inline-flex items-center bg-secondary hover:bg-secondary/90 text-secondary-foreground px-4 py-2 rounded-md text-sm font-semibold transition-colors whitespace-nowrap"
-              >
-                Try eccuity free
-              </a>
+              {!isLoggedIn && (
+                <a
+                  href="https://app.eccuity.com/register"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hidden lg:inline-flex items-center bg-secondary hover:bg-secondary/90 text-secondary-foreground px-4 py-2 rounded-md text-sm font-semibold transition-colors whitespace-nowrap"
+                >
+                  Try eccuity free
+                </a>
+              )}
+              {isLoggedIn ? (
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <span className="hidden md:inline text-xs font-medium text-muted-foreground max-w-[160px] truncate">
+                    {user?.email || user?.name}
+                  </span>
+                  <button
+                    onClick={logout}
+                    aria-label="Log out"
+                    title="Log out"
+                    className="inline-flex items-center justify-center h-10 w-10 rounded-md border border-subtle-border bg-card text-foreground hover:bg-muted/40 transition-colors"
+                  >
+                    <LogOut className="h-5 w-5" />
+                  </button>
+                </div>
+              ) : authEnabled ? (
+                <button
+                  onClick={login}
+                  className="inline-flex items-center gap-1.5 flex-shrink-0 bg-primary hover:bg-primary/90 text-primary-foreground px-3 sm:px-4 py-2 rounded-md text-sm font-semibold transition-colors whitespace-nowrap"
+                >
+                  <img src="/images/eccuity-logo.svg" alt="" className="h-4 w-4" />
+                  <span className="hidden sm:inline">Log in with eccuity</span>
+                  <span className="sm:hidden">Log in</span>
+                </button>
+              ) : null}
             </div>
           </div>
         </div>
@@ -126,6 +158,8 @@ export const DashboardPage: React.FC = () => {
                 priceData={priceQuery.data?.prices}
                 priceTicker={priceQuery.data?.ticker}
                 priceName={priceQuery.data?.name}
+                restricted={restricted}
+                onLockedClick={login}
               />
             )}
           </div>

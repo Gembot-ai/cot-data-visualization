@@ -14,7 +14,7 @@ import {
   ChartOptions,
 } from 'chart.js';
 import { Chart } from 'react-chartjs-2';
-import { Maximize2, Minimize2 } from 'lucide-react';
+import { Lock, Maximize2, Minimize2 } from 'lucide-react';
 import type { CotData, PricePoint } from '../../api/types';
 import { useThemeObserver } from '../../lib/theme';
 import { chartColor, cssVar, withAlpha } from '../../lib/chartColors';
@@ -38,15 +38,24 @@ interface StackedBarChartProps {
   priceData?: PricePoint[];
   priceTicker?: string;
   priceName?: string;
+  /** Anonymous user: far-back ranges are locked behind login. */
+  restricted?: boolean;
+  /** Called when a locked range is tapped (triggers login). */
+  onLockedClick?: () => void;
 }
 
 type DateRange = '1M' | '3M' | '6M' | '1Y' | '2Y' | '5Y' | 'ALL' | 'CUSTOM';
+
+// Ranges that reach beyond the anonymous recent window (~1 year).
+const LOCKED_RANGES: DateRange[] = ['2Y', '5Y', 'ALL', 'CUSTOM'];
 
 export const StackedBarChart: React.FC<StackedBarChartProps> = ({
   data,
   priceData,
   priceTicker,
   priceName,
+  restricted = false,
+  onLockedClick,
 }) => {
   const theme = useThemeObserver();
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -424,22 +433,30 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
 
         {/* Mobile-optimized date range selector */}
         <div className="flex gap-1.5 overflow-x-auto -mx-3 px-3 pb-2 scrollbar-hide">
-          {(['1M', '3M', '6M', '1Y', '2Y', 'ALL'] as DateRange[]).map((range) => (
-            <button
-              key={range}
-              onClick={() => {
-                setDateRange(range);
-                setShowCustomDatePicker(false);
-              }}
-              className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors whitespace-nowrap min-w-[44px] active:scale-95 ${
-                dateRange === range
-                  ? 'border-primary bg-primary text-primary-foreground'
-                  : 'border-subtle-border bg-card text-foreground/70 hover:bg-muted/40'
-              }`}
-            >
-              {range}
-            </button>
-          ))}
+          {(['1M', '3M', '6M', '1Y', '2Y', 'ALL'] as DateRange[]).map((range) => {
+            const locked = restricted && LOCKED_RANGES.includes(range);
+            return (
+              <button
+                key={range}
+                onClick={() => {
+                  if (locked) { onLockedClick?.(); return; }
+                  setDateRange(range);
+                  setShowCustomDatePicker(false);
+                }}
+                title={locked ? 'Log in with eccuity to see more' : undefined}
+                className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors whitespace-nowrap min-w-[44px] active:scale-95 inline-flex items-center justify-center gap-1 ${
+                  dateRange === range && !locked
+                    ? 'border-primary bg-primary text-primary-foreground'
+                    : locked
+                    ? 'border-subtle-border bg-card text-foreground/40'
+                    : 'border-subtle-border bg-card text-foreground/70 hover:bg-muted/40'
+                }`}
+              >
+                {range}
+                {locked && <Lock className="h-3 w-3" />}
+              </button>
+            );
+          })}
         </div>
 
         {/* Mobile legend - compact grid - clickable */}
@@ -492,26 +509,34 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
         <div className="flex items-center gap-4">
           {/* Date Range Selector */}
           <div className="flex items-center gap-2">
-            {(['1M', '3M', '6M', '1Y', '2Y', '5Y', 'ALL', 'CUSTOM'] as DateRange[]).map((range) => (
-              <button
-                key={range}
-                onClick={() => {
-                  setDateRange(range);
-                  if (range === 'CUSTOM') {
-                    setShowCustomDatePicker(true);
-                  } else {
-                    setShowCustomDatePicker(false);
-                  }
-                }}
-                className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
-                  dateRange === range
-                    ? 'border-primary bg-primary text-primary-foreground'
-                    : 'border-subtle-border bg-card text-foreground/70 hover:bg-muted/40'
-                }`}
-              >
-                {range}
-              </button>
-            ))}
+            {(['1M', '3M', '6M', '1Y', '2Y', '5Y', 'ALL', 'CUSTOM'] as DateRange[]).map((range) => {
+              const locked = restricted && LOCKED_RANGES.includes(range);
+              return (
+                <button
+                  key={range}
+                  onClick={() => {
+                    if (locked) { onLockedClick?.(); return; }
+                    setDateRange(range);
+                    if (range === 'CUSTOM') {
+                      setShowCustomDatePicker(true);
+                    } else {
+                      setShowCustomDatePicker(false);
+                    }
+                  }}
+                  title={locked ? 'Log in with eccuity to see more' : undefined}
+                  className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors inline-flex items-center gap-1 ${
+                    dateRange === range && !locked
+                      ? 'border-primary bg-primary text-primary-foreground'
+                      : locked
+                      ? 'border-subtle-border bg-card text-foreground/40'
+                      : 'border-subtle-border bg-card text-foreground/70 hover:bg-muted/40'
+                  }`}
+                >
+                  {range}
+                  {locked && <Lock className="h-3 w-3" />}
+                </button>
+              );
+            })}
           </div>
 
           {/* Fullscreen Button */}
