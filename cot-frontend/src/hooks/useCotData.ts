@@ -14,10 +14,13 @@ export function useCotData(marketSymbol: string) {
 export function useCotHistory(
   marketSymbol: string,
   startDate?: Date,
-  endDate?: Date
+  endDate?: Date,
+  isLoggedIn = false
 ) {
   return useQuery({
-    queryKey: ['cot-history', marketSymbol, startDate, endDate],
+    // isLoggedIn is part of the key so history refetches (full vs recent-only)
+    // immediately when the auth state changes.
+    queryKey: ['cot-history', marketSymbol, startDate, endDate, isLoggedIn],
     queryFn: () => cotApi.getHistory(marketSymbol, startDate, endDate),
     staleTime: 1000 * 60 * 60 * 24,
     gcTime: 1000 * 60 * 60 * 24 * 7,
@@ -27,10 +30,11 @@ export function useCotHistory(
 
 export function useAssetPrices(
   marketSymbol: string,
-  reportDates?: string[]
+  reportDates?: string[],
+  isLoggedIn = false
 ) {
   return useQuery({
-    queryKey: ['asset-prices', marketSymbol, reportDates],
+    queryKey: ['asset-prices', marketSymbol, reportDates, isLoggedIn],
     queryFn: () => cotApi.getPrices(marketSymbol, reportDates),
     staleTime: 1000 * 60 * 60 * 24, // 24 hours
     gcTime: 1000 * 60 * 60 * 24 * 7,
