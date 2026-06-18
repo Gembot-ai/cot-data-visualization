@@ -14,6 +14,7 @@ export interface EccuityUser {
   id: string;
   email?: string;
   name?: string;
+  featureFlags?: string[];
 }
 
 export function buildAuthorizeUrl(params: { state: string; codeChallenge: string }): string {
@@ -63,7 +64,7 @@ export async function fetchCurrentUser(accessToken: string): Promise<EccuityUser
       'Content-Type': 'application/json',
       Authorization: `Bearer ${accessToken}`,
     },
-    body: JSON.stringify({ query: '{ fetchCurrentUser { id email name } }' }),
+    body: JSON.stringify({ query: '{ fetchCurrentUser { id email name featureFlags } }' }),
   });
 
   if (!res.ok) {

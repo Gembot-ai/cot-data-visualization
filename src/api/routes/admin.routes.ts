@@ -6,19 +6,30 @@ import { env } from '../../config/env';
 export async function adminRoutes(fastify: FastifyInstance) {
   const controller = new AdminController();
 
-  // Auth check - header only, no query params
-  const checkAdminAuth = (request: any, reply: any) => {
+  // Authorize either an eccuity admin (session-cookie JWT with isAdmin) or the
+  // ADMIN_KEY header. Sets reply on failure; callers check reply.sent.
+  const checkAdminAuth = async (request: any, reply: any): Promise<void> => {
+    // 1. eccuity admin session (preferred) — reads the cot_session cookie.
+    try {
+      const payload: any = await request.jwtVerify();
+      if (payload && payload.isAdmin) return; // authorized
+    } catch {
+      // no / invalid session — fall through to the admin key
+    }
+
+    // 2. ADMIN_KEY header fallback.
     const adminKey = request.headers['x-admin-key'];
     const expectedKey = env.ADMIN_KEY || process.env.ADMIN_KEY;
 
     if (!expectedKey) {
-      logger.warn('ADMIN_KEY not configured - admin endpoints disabled');
-      return reply.code(403).send({ error: 'Admin endpoints not configured' });
+      reply.code(403).send({ error: 'Admin access requires an eccuity admin login or ADMIN_KEY' });
+      return;
     }
 
     if (adminKey !== expectedKey) {
       logger.warn({ ip: request.ip, url: request.url }, 'Failed admin auth attempt');
-      return reply.code(401).send({ error: 'Unauthorized' });
+      reply.code(401).send({ error: 'Unauthorized' });
+      return;
     }
   };
 
@@ -35,7 +46,7 @@ export async function adminRoutes(fastify: FastifyInstance) {
 
   // POST /api/v1/admin/validate - Validate data against CFTC
   fastify.post('/admin/validate', async (request, reply) => {
-    checkAdminAuth(request, reply);
+    await checkAdminAuth(request, reply);
     if (reply.sent) return;
 
     try {
@@ -50,7 +61,7 @@ export async function adminRoutes(fastify: FastifyInstance) {
 
   // POST /api/v1/admin/refetch - Clear and refetch all data
   fastify.post('/admin/refetch', async (request, reply) => {
-    checkAdminAuth(request, reply);
+    await checkAdminAuth(request, reply);
     if (reply.sent) return;
 
     try {
@@ -82,7 +93,7 @@ export async function adminRoutes(fastify: FastifyInstance) {
 
   // POST /api/v1/admin/update - Incremental update
   fastify.post('/admin/update', async (request, reply) => {
-    checkAdminAuth(request, reply);
+    await checkAdminAuth(request, reply);
     if (reply.sent) return;
 
     try {

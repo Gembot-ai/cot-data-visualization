@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { LogOut, Moon, Sun } from 'lucide-react';
+import { LogOut, Moon, Shield, Sun } from 'lucide-react';
 import { useCotData, useCotHistory, useAssetPrices } from '../hooks/useCotData';
 import { StackedBarChart } from '../components/charts/StackedBarChart';
 import { MetricsPanel } from '../components/dashboard/MetricsPanel';
@@ -120,6 +120,16 @@ export const DashboardPage: React.FC = () => {
               )}
               {isLoggedIn ? (
                 <div className="flex items-center gap-2 flex-shrink-0">
+                  {user?.isAdmin && (
+                    <a
+                      href="/admin"
+                      aria-label="Admin panel"
+                      title="Admin panel"
+                      className="inline-flex items-center justify-center h-10 w-10 rounded-md border border-subtle-border bg-card text-foreground hover:bg-muted/40 transition-colors"
+                    >
+                      <Shield className="h-5 w-5" />
+                    </a>
+                  )}
                   <span className="hidden md:inline text-xs font-medium text-muted-foreground max-w-[160px] truncate">
                     {user?.email || user?.name}
                   </span>

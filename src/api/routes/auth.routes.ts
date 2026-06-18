@@ -5,6 +5,7 @@ import {
   generateState,
   generateVerifier,
   challengeFromVerifier,
+  isAdminUser,
   SESSION_COOKIE,
   STATE_COOKIE,
   VERIFIER_COOKIE,
@@ -68,7 +69,7 @@ export async function authRoutes(fastify: FastifyInstance) {
         const user = await fetchCurrentUser(accessToken); // eccuity token discarded after this
 
         const token = await reply.jwtSign(
-          { sub: user.id, email: user.email, name: user.name },
+          { sub: user.id, email: user.email, name: user.name, isAdmin: isAdminUser(user.featureFlags) },
           { expiresIn: SESSION_TTL }
         );
         reply.setCookie(SESSION_COOKIE, token, {
@@ -96,10 +97,10 @@ export async function authRoutes(fastify: FastifyInstance) {
       return reply.send({ authEnabled: false, user: null });
     }
     try {
-      const payload = await request.jwtVerify<{ sub: string; email?: string; name?: string }>();
+      const payload = await request.jwtVerify<{ sub: string; email?: string; name?: string; isAdmin?: boolean }>();
       return reply.send({
         authEnabled: true,
-        user: { id: payload.sub, email: payload.email, name: payload.name },
+        user: { id: payload.sub, email: payload.email, name: payload.name, isAdmin: !!payload.isAdmin },
       });
     } catch {
       return reply.send({ authEnabled: true, user: null });

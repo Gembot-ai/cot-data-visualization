@@ -14,6 +14,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { useTheme } from '../lib/theme';
+import { useAuth } from '../lib/auth';
 import { logger } from '../lib/logger';
 import { formatDate, formatNumber } from '../lib/format';
 
@@ -57,6 +58,10 @@ interface ValidationResult {
 
 export const AdminPage: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
+  // eccuity admins (ADMIN feature flag) are authorized via their session cookie
+  // and don't need the ADMIN_KEY. isAdmin comes from /auth/me.
+  const { user } = useAuth();
+  const isEccuityAdmin = !!user?.isAdmin;
   const [adminKey, setAdminKey] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [status, setStatus] = useState<DataStatus | null>(null);
@@ -231,7 +236,8 @@ export const AdminPage: React.FC = () => {
     }
   };
 
-  const actionEnabled = isAuthenticated && loading === null;
+  const authed = isEccuityAdmin || isAuthenticated;
+  const actionEnabled = authed && loading === null;
   const actionClass = (variant: 'primary' | 'secondary' | 'destructive') => {
     if (!actionEnabled) {
       return 'border border-subtle-border bg-muted/40 text-muted-foreground cursor-not-allowed';
@@ -268,9 +274,12 @@ export const AdminPage: React.FC = () => {
         </div>
 
         {/* Auth Section */}
-        {!isAuthenticated ? (
+        {!authed ? (
           <div className="rounded-xl border border-subtle-border bg-card shadow-gem p-6 mb-6">
             <h2 className="text-lg font-semibold mb-4">Authentication Required</h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              Log in with an eccuity admin account from the dashboard, or enter the admin key below.
+            </p>
             <div className="flex gap-4">
               <input
                 type="password"
@@ -291,14 +300,19 @@ export const AdminPage: React.FC = () => {
         ) : (
           <div className="rounded-xl border border-subtle-border bg-card p-4 mb-6 flex items-center justify-between">
             <span className="flex items-center gap-2 text-foreground">
-              <ShieldCheck className="h-5 w-5 text-chart-1" /> Authenticated as admin
+              <ShieldCheck className="h-5 w-5 text-chart-1" />
+              {isEccuityAdmin
+                ? `Authenticated as eccuity admin${user?.email ? ` (${user.email})` : ''}`
+                : 'Authenticated as admin'}
             </span>
-            <button
-              onClick={handleLogout}
-              className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <LogOut className="h-4 w-4" /> Logout
-            </button>
+            {!isEccuityAdmin && (
+              <button
+                onClick={handleLogout}
+                className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <LogOut className="h-4 w-4" /> Logout
+              </button>
+            )}
           </div>
         )}
 

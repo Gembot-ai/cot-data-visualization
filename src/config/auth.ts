@@ -55,9 +55,21 @@ export function generateState(): string {
   return base64url(crypto.randomBytes(16));
 }
 
+/**
+ * eccuity feature flag that grants CoT admin access. eccuity admins carry this
+ * flag on their user (FeatureFlagNames.ADMIN); they get the admin panel + full
+ * access without needing the separate ADMIN_KEY.
+ */
+export const ECCUITY_ADMIN_FLAG = 'ADMIN';
+
+export function isAdminUser(featureFlags?: string[] | null): boolean {
+  return Array.isArray(featureFlags) && featureFlags.includes(ECCUITY_ADMIN_FLAG);
+}
+
 /** Our session JWT payload / request identity shape. */
 export interface SessionUser {
   sub: string;
   email?: string;
   name?: string;
+  isAdmin?: boolean;
 }
