@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowDown, ArrowUp, BarChart3, Calendar, TrendingDown, TrendingUp } from 'lucide-react';
+import { ArrowDown, ArrowUp } from 'lucide-react';
 import type { CotData } from '../../api/types';
 import { formatDate, formatNumber, formatPercent, formatSigned } from '../../lib/format';
 
@@ -15,7 +15,7 @@ export const MetricsPanel: React.FC<MetricsPanelProps> = ({
   const commercialNet = data.commercial_long - data.commercial_short;
   const nonCommercialNet = data.non_commercial_long - data.non_commercial_short;
 
-  // Calculate changes from previous report
+  // Week-over-week changes
   const prevCommercialNet = previousData ? previousData.commercial_long - previousData.commercial_short : 0;
   const prevNonCommercialNet = previousData ? previousData.non_commercial_long - previousData.non_commercial_short : 0;
   const prevOpenInterest = previousData?.open_interest || 0;
@@ -26,150 +26,103 @@ export const MetricsPanel: React.FC<MetricsPanelProps> = ({
 
   const commercialLongPct = (data.commercial_long / data.open_interest) * 100;
   const commercialShortPct = (data.commercial_short / data.open_interest) * 100;
-  const nonCommercialLongPct =
-    (data.non_commercial_long / data.open_interest) * 100;
-  const nonCommercialShortPct =
-    (data.non_commercial_short / data.open_interest) * 100;
+  const nonCommercialLongPct = (data.non_commercial_long / data.open_interest) * 100;
+  const nonCommercialShortPct = (data.non_commercial_short / data.open_interest) * 100;
 
-  const MetricCard = ({
-    label,
-    value,
-    subValue,
-    change,
-    color,
-    icon,
-  }: {
-    label: string;
-    value: string;
-    subValue?: string;
-    change?: number;
-    color?: string;
-    icon?: React.ReactNode;
+  // Small inline week-over-week change indicator.
+  const Change = ({ value }: { value: number }) =>
+    value === 0 ? null : (
+      <span className={`inline-flex items-center gap-0.5 text-[11px] font-semibold ${value > 0 ? 'text-chart-1' : 'text-chart-2'}`}>
+        {value > 0 ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
+        {formatNumber(Math.abs(value))}
+      </span>
+    );
+
+  // Compact net-position tile (Commercial / Speculative).
+  const NetCard = ({ label, value, pct, change }: { label: string; value: number; pct: number; change: number }) => (
+    <div className="rounded-lg bg-card-muted border border-subtle-border p-3">
+      <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className={`text-xl font-bold leading-tight ${value >= 0 ? 'text-chart-1' : 'text-chart-2'}`}>
+        {formatSigned(value)}
+      </div>
+      <div className="mt-1 flex items-center justify-between gap-1">
+        <span className="text-[11px] text-muted-foreground">{formatPercent(pct)} of OI</span>
+        <Change value={change} />
+      </div>
+    </div>
+  );
+
+  // Dense long/short row for the detailed breakdown.
+  const PositionRow = ({ label, long, longPct, short, shortPct }: {
+    label: string; long: number; longPct: number; short: number; shortPct: number;
   }) => (
-    <div className="group relative p-3 sm:p-5 rounded-lg sm:rounded-xl bg-card-muted border border-subtle-border hover:border-primary transition-colors duration-200">
-      {icon && (
-        <div className="hidden sm:block absolute top-4 right-4 text-muted-foreground opacity-30 group-hover:opacity-50 transition-opacity">
-          {icon}
+    <div className="flex items-center justify-between gap-3 py-2 border-b border-subtle-border last:border-0">
+      <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground w-24 flex-shrink-0">{label}</span>
+      <div className="flex-1 grid grid-cols-2 gap-3 text-right">
+        <div>
+          <div className="text-sm font-bold text-chart-1 leading-tight">{formatNumber(long)}</div>
+          <div className="text-[10px] text-muted-foreground">Long {formatPercent(longPct)}</div>
         </div>
-      )}
-      <div className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">
-        {label}
+        <div>
+          <div className="text-sm font-bold text-chart-2 leading-tight">{formatNumber(short)}</div>
+          <div className="text-[10px] text-muted-foreground">Short {formatPercent(shortPct)}</div>
+        </div>
       </div>
-      <div className={`text-xl sm:text-3xl font-bold ${color || 'text-foreground'}`}>
-        {value}
-      </div>
-      {change !== undefined && change !== 0 && (
-        <div className={`text-[10px] sm:text-sm mt-1 font-semibold flex items-center gap-1 ${
-          change > 0 ? 'text-chart-1' : 'text-chart-2'
-        }`}>
-          {change > 0 ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />}
-          {formatNumber(Math.abs(change))}
-          <span className="hidden sm:inline">from last week</span>
-        </div>
-      )}
-      {subValue && (
-        <div className="text-[10px] sm:text-xs mt-1 sm:mt-2 font-medium text-muted-foreground">
-          {subValue}
-        </div>
-      )}
     </div>
   );
 
   return (
-    <div className="rounded-xl border border-subtle-border bg-card shadow-gem p-3 sm:p-6 h-fit lg:sticky lg:top-6">
-      <h3 className="text-base sm:text-2xl font-bold mb-3 sm:mb-6 text-foreground">
-        Latest Report
-      </h3>
+    <div className="rounded-xl border border-subtle-border bg-card shadow-gem p-4 sm:p-5 h-fit lg:sticky lg:top-20">
+      {/* Header with inline report date */}
+      <div className="flex items-baseline justify-between gap-2 mb-3">
+        <h3 className="text-lg font-bold text-foreground">Latest Report</h3>
+        <span className="text-xs font-medium text-muted-foreground">{formatDate(data.report_date)}</span>
+      </div>
 
-      <div className="space-y-2 sm:space-y-4">
-        <MetricCard
-          label="Report Date"
-          value={formatDate(data.report_date)}
-          icon={<Calendar className="h-8 w-8" />}
-        />
+      {/* Open Interest — slim row */}
+      <div className="flex items-center justify-between gap-2 rounded-lg bg-card-muted border border-subtle-border px-3 py-2 mb-3">
+        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Open Interest</span>
+        <span className="flex items-center gap-2">
+          <span className="text-base font-bold text-foreground">{formatNumber(data.open_interest)}</span>
+          <Change value={openInterestChange} />
+        </span>
+      </div>
 
-        <MetricCard
-          label="Open Interest"
-          value={formatNumber(data.open_interest)}
-          change={openInterestChange}
-          subValue="Total contracts"
-          icon={<BarChart3 className="h-8 w-8" />}
-        />
-
-        <MetricCard
+      {/* Net positions — two up */}
+      <div className="grid grid-cols-2 gap-2 mb-4">
+        <NetCard
           label="Commercial Net"
-          value={formatSigned(commercialNet)}
+          value={commercialNet}
+          pct={(commercialNet / data.open_interest) * 100}
           change={commercialNetChange}
-          subValue={`${formatPercent((commercialNet / data.open_interest) * 100)} of OI`}
-          color={commercialNet >= 0 ? 'text-chart-1' : 'text-chart-2'}
-          icon={commercialNet >= 0 ? <TrendingUp className="h-8 w-8" /> : <TrendingDown className="h-8 w-8" />}
         />
-
-        <MetricCard
+        <NetCard
           label="Speculative Net"
-          value={formatSigned(nonCommercialNet)}
+          value={nonCommercialNet}
+          pct={(nonCommercialNet / data.open_interest) * 100}
           change={nonCommercialNetChange}
-          subValue={`${formatPercent((nonCommercialNet / data.open_interest) * 100)} of OI`}
-          color={nonCommercialNet >= 0 ? 'text-chart-1' : 'text-chart-2'}
-          icon={nonCommercialNet >= 0 ? <TrendingUp className="h-8 w-8" /> : <TrendingDown className="h-8 w-8" />}
         />
+      </div>
 
-        <div className="pt-6 mt-6 border-t border-subtle-border">
-          <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-4">
-            Detailed Positions
-          </div>
-          <div className="space-y-4">
-            {/* Commercial Positions */}
-            <div className="bg-card-muted border border-subtle-border p-3 sm:p-4 rounded-xl">
-              <div className="text-xs font-semibold text-muted-foreground mb-2">COMMERCIAL</div>
-              <div className="grid grid-cols-2 gap-2 sm:gap-3">
-                <div>
-                  <div className="text-xs text-muted-foreground">Long</div>
-                  <div className="text-base sm:text-lg font-bold text-chart-1">
-                    {formatNumber(data.commercial_long)}
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    {formatPercent(commercialLongPct)} of OI
-                  </div>
-                </div>
-                <div>
-                  <div className="text-xs text-muted-foreground">Short</div>
-                  <div className="text-base sm:text-lg font-bold text-chart-2">
-                    {formatNumber(data.commercial_short)}
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    {formatPercent(commercialShortPct)} of OI
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Speculative Positions */}
-            <div className="bg-card-muted border border-subtle-border p-3 sm:p-4 rounded-xl">
-              <div className="text-xs font-semibold text-muted-foreground mb-2">SPECULATIVE</div>
-              <div className="grid grid-cols-2 gap-2 sm:gap-3">
-                <div>
-                  <div className="text-xs text-muted-foreground">Long</div>
-                  <div className="text-base sm:text-lg font-bold text-chart-1">
-                    {formatNumber(data.non_commercial_long)}
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    {formatPercent(nonCommercialLongPct)} of OI
-                  </div>
-                </div>
-                <div>
-                  <div className="text-xs text-muted-foreground">Short</div>
-                  <div className="text-base sm:text-lg font-bold text-chart-2">
-                    {formatNumber(data.non_commercial_short)}
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    {formatPercent(nonCommercialShortPct)} of OI
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+      {/* Detailed positions — dense rows */}
+      <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+        Detailed Positions
+      </div>
+      <div>
+        <PositionRow
+          label="Commercial"
+          long={data.commercial_long}
+          longPct={commercialLongPct}
+          short={data.commercial_short}
+          shortPct={commercialShortPct}
+        />
+        <PositionRow
+          label="Speculative"
+          long={data.non_commercial_long}
+          longPct={nonCommercialLongPct}
+          short={data.non_commercial_short}
+          shortPct={nonCommercialShortPct}
+        />
       </div>
     </div>
   );
