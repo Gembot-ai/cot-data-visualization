@@ -3,11 +3,15 @@ import fastifyCors from '@fastify/cors';
 import fastifyHelmet from '@fastify/helmet';
 import fastifyRateLimit from '@fastify/rate-limit';
 import fastifyStatic from '@fastify/static';
+import fastifyCookie from '@fastify/cookie';
+import fastifyJwt from '@fastify/jwt';
 import path from 'path';
 import { env } from './config/env';
+import { SESSION_COOKIE, authEnabled } from './config/auth';
 import { cotRoutes } from './api/routes/cot.routes';
 import { marketsRoutes } from './api/routes/markets.routes';
 import { adminRoutes } from './api/routes/admin.routes';
+import { authRoutes } from './api/routes/auth.routes';
 import { errorHandler } from './api/middlewares/error-handler';
 import { logger } from './utils/logger';
 
@@ -37,7 +41,19 @@ export async function buildApp() {
     credentials: true
   });
 
+  // Cookies + JWT sessions (eccuity OAuth login). The session JWT lives in the
+  // httpOnly `cot_session` cookie; @fastify/jwt is configured to read it.
+  await fastify.register(fastifyCookie, { secret: env.COOKIE_SECRET });
+  await fastify.register(fastifyJwt, {
+    secret: env.JWT_SECRET,
+    cookie: { cookieName: SESSION_COOKIE, signed: false },
+  });
+  logger.info({ authEnabled }, authEnabled
+    ? 'eccuity OAuth login enabled'
+    : 'eccuity OAuth login disabled (set ECCUITY_CLIENT_ID to enable)');
+
   // API Routes
+  await fastify.register(authRoutes, { prefix: '/api/v1' });
   await fastify.register(cotRoutes, { prefix: '/api/v1' });
   await fastify.register(marketsRoutes, { prefix: '/api/v1' });
   await fastify.register(adminRoutes, { prefix: '/api/v1' });
