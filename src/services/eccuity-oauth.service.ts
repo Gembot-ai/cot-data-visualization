@@ -25,7 +25,10 @@ export function buildAuthorizeUrl(params: { state: string; codeChallenge: string
   url.searchParams.set('state', params.state);
   url.searchParams.set('code_challenge', params.codeChallenge);
   url.searchParams.set('code_challenge_method', 'S256');
-  url.searchParams.set('scope', '');
+  // 'identity' is required to call fetchCurrentUser (eccuity's scope chokepoint);
+  // every user tier — free included — can grant it. Without a scope the token is
+  // FORBIDDEN from reading the user.
+  url.searchParams.set('scope', 'identity');
   return url.toString();
 }
 
