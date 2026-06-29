@@ -49,7 +49,7 @@ export async function exchangeCode(params: { code: string; codeVerifier: string 
   if (!res.ok) {
     const text = await res.text().catch(() => '');
     logger.error({ status: res.status, body: text.slice(0, 300) }, 'eccuity token exchange failed');
-    throw new Error(`token exchange failed: ${res.status}`);
+    throw new Error(`token exchange failed: ${res.status} ${text.slice(0, 200)}`);
   }
 
   const json = (await res.json()) as { access_token?: string };
@@ -70,7 +70,7 @@ export async function fetchCurrentUser(accessToken: string): Promise<EccuityUser
   if (!res.ok) {
     const text = await res.text().catch(() => '');
     logger.error({ status: res.status, body: text.slice(0, 300) }, 'eccuity fetchCurrentUser failed');
-    throw new Error(`fetchCurrentUser failed: ${res.status}`);
+    throw new Error(`fetchCurrentUser failed: ${res.status} ${text.slice(0, 200)}`);
   }
 
   const json = (await res.json()) as {
@@ -80,7 +80,7 @@ export async function fetchCurrentUser(accessToken: string): Promise<EccuityUser
   const user = json.data?.fetchCurrentUser;
   if (!user?.id) {
     logger.error({ errors: json.errors }, 'eccuity fetchCurrentUser returned no user');
-    throw new Error('fetchCurrentUser: no user');
+    throw new Error(`fetchCurrentUser: no user (errors=${JSON.stringify(json.errors ?? null).slice(0, 200)})`);
   }
   return user;
 }

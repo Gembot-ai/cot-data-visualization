@@ -30,6 +30,9 @@ function txCookieOpts(maxAge: number) {
   };
 }
 
+// TEMPORARY: last login failure, exposed via GET /auth/debug-last for diagnosis.
+let lastAuthError: { step: string; message: string; at: string } | null = null;
+
 export async function authRoutes(fastify: FastifyInstance) {
   // Begin login: stash state+PKCE, redirect to eccuity's authorize endpoint.
   fastify.get('/auth/login', async (_request, reply) => {
@@ -65,8 +68,23 @@ export async function authRoutes(fastify: FastifyInstance) {
         }
         if (unsignedState.value !== state) return reply.redirect('/?login=error'); // CSRF
 
-        const accessToken = await exchangeCode({ code, codeVerifier: unsignedVerifier.value });
-        const user = await fetchCurrentUser(accessToken); // eccuity token discarded after this
+        let accessToken: string;
+        try {
+          accessToken = await exchangeCode({ code, codeVerifier: unsignedVerifier.value });
+        } catch (e) {
+          lastAuthError = { step: 'exchange', message: (e as Error).message, at: new Date().toISOString() };
+          logger.error({ err: e }, 'OAuth token exchange failed');
+          return reply.redirect('/?login=error&reason=token');
+        }
+
+        let user;
+        try {
+          user = await fetchCurrentUser(accessToken); // eccuity token discarded after this
+        } catch (e) {
+          lastAuthError = { step: 'identity', message: (e as Error).message, at: new Date().toISOString() };
+          logger.error({ err: e }, 'OAuth identity fetch failed');
+          return reply.redirect('/?login=error&reason=identity');
+        }
 
         const token = await reply.jwtSign(
           { sub: user.id, email: user.email, name: user.name, isAdmin: isAdminUser(user.featureFlags) },
@@ -85,11 +103,18 @@ export async function authRoutes(fastify: FastifyInstance) {
 
         return reply.redirect('/?login=success');
       } catch (err) {
+        lastAuthError = { step: 'unknown', message: (err as Error).message, at: new Date().toISOString() };
         logger.error({ err }, 'OAuth callback failed');
-        return reply.redirect('/?login=error');
+        return reply.redirect('/?login=error&reason=unknown');
       }
     }
   );
+
+  // TEMPORARY diagnostic: surfaces the last login failure (step + eccuity
+  // response detail; no tokens/PII). Remove once login is confirmed working.
+  fastify.get('/auth/debug-last', async (_request, reply) => {
+    return reply.send(lastAuthError ?? { step: 'none', message: 'no recent auth error' });
+  });
 
   // Current session (always 200; user is null when anonymous).
   fastify.get('/auth/me', async (request, reply) => {
