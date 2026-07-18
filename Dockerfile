@@ -22,6 +22,10 @@ COPY cot-frontend/package*.json ./
 RUN npm install
 
 COPY cot-frontend/ ./
+# Build-time env for Vite (inlined into the bundle). Railway passes matching
+# service variables as build args when declared here.
+ARG VITE_CLARITY_PROJECT_ID
+ENV VITE_CLARITY_PROJECT_ID=$VITE_CLARITY_PROJECT_ID
 RUN npm run build
 
 # Stage 3: Production Runtime

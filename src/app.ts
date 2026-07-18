@@ -24,9 +24,19 @@ export async function buildApp() {
     disableRequestLogging: false
   });
 
-  // Security headers
+  // Security headers. In production, extend helmet's default CSP so Microsoft
+  // Clarity (session recordings) can load its tag and report telemetry.
   await fastify.register(fastifyHelmet, {
-    contentSecurityPolicy: env.NODE_ENV === 'production' ? undefined : false,
+    contentSecurityPolicy: env.NODE_ENV === 'production'
+      ? {
+          // useDefaults:true (implicit) — these merge over the strict defaults.
+          directives: {
+            'script-src': ["'self'", 'https://www.clarity.ms', 'https://c.clarity.ms'],
+            'connect-src': ["'self'", 'https://*.clarity.ms', 'https://c.bing.com'],
+            'img-src': ["'self'", 'data:', 'https://*.clarity.ms'],
+          },
+        }
+      : false,
   });
 
   // Rate limiting
